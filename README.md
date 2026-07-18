@@ -7,6 +7,39 @@
 ## 🌟 The Vision
 In the future, human workers won't execute tasks; they will **manage, orchestrate, and approve** tasks executed by specialized AI agents. This project demonstrates an Enterprise OS where Marketing and Finance AI agents autonomously negotiate campaigns, but seamlessly pause to request **real human approval** via Notion before executing financial actions.
 
+---
+
+## 📖 The Story: Normal Company vs AI Company
+
+### ❌ Normal Company (Without AI)
+In a traditional setup, every step requires human intervention, leading to massive delays.
+
+1. **Customer** tells **Sales** they need a new feature.
+2. **Sales** sends an email to **Engineering**.
+3. **Engineering** reads the email, creates an estimate (Time = 5 Days, Cost = ₹40,000), and emails **Finance**.
+4. **Finance** reviews the budget and replies (Approved / Rejected).
+5. **Manager** receives an email for final approval (YES / NO).
+6. **Engineering** finally starts coding.
+
+**The Problem:** Engineering → Email, Finance → Email, Manager → Email, Slack → Notification, GitHub → Manual Issue. *Humans are the bottleneck everywhere. Time is wasted.*
+
+### ✅ The AI Company (Our Approach)
+Imagine a company where AI acts as the employees, and humans only act as the final decision-makers.
+
+- 🤖 **Engineering/Marketing AI**
+- 🤖 **Finance AI**
+- 👨 **Manager (Human)**
+
+1. **Customer** requests a new feature.
+2. **Engineering AI** instantly understands, estimates time/cost, and *autonomously* messages **Finance AI**. *(Zero human effort)*
+3. **Finance AI** checks the budget. If it's too high, **Engineering AI** negotiates and adjusts automatically. *(Zero human effort)*
+4. The *only* time a human is involved is at the end: **Manager clicks "Approve" on their phone/email**.
+5. After approval, the AI *automatically* creates GitHub Issues, sends Slack notifications, and saves the logs in Notion.
+
+**Everything is automatic, instantly connected, and frictionless.**
+
+---
+
 ## 🏆 Hackathon Winning Features
 
 ### 1. True Human-in-the-Loop (Decoupled Pausing)
