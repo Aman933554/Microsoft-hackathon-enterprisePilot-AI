@@ -94,7 +94,7 @@ function ActionContent() {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-        <div style={{ padding: "1rem", display: "flex", flexDirection: "column", gap: "0.5rem", background: "rgba(255,255,255,0.03)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.05)" }}>
+        <div style={{ padding: "1rem", display: "flex", flexDirection: "column", gap: "0.5rem", background: "rgba(255,255,255,0.03)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.02)" }}>
           <h5 style={{ margin: 0, color: "var(--text-muted)", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "1px" }}>Request Details</h5>
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: "0.5rem" }}>
             <span style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>Feature</span>
@@ -114,7 +114,7 @@ function ActionContent() {
           </div>
         </div>
 
-        <div style={{ padding: "1rem", display: "flex", flexDirection: "column", gap: "0.5rem", background: "rgba(255,255,255,0.03)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.05)" }}>
+        <div style={{ padding: "1rem", display: "flex", flexDirection: "column", gap: "0.5rem", background: "rgba(255,255,255,0.03)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.02)" }}>
           <h5 style={{ margin: 0, color: "var(--text-muted)", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "1px" }}>Status Checks</h5>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--text-secondary)", fontSize: "0.9rem", marginTop: "0.5rem" }}>
             <CheckCircle size={14} color="var(--accent-emerald)" /> Finance Approved
@@ -128,7 +128,7 @@ function ActionContent() {
         </div>
       </div>
 
-      <div style={{ padding: "1rem", background: "rgba(0,0,0,0.3)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.05)" }}>
+      <div style={{ padding: "1rem", background: "rgba(0,0,0,0.3)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.02)" }}>
          <h5 style={{ margin: "0 0 1rem 0", color: "var(--text-muted)", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "1px" }}>Notification Escalation</h5>
          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
@@ -154,7 +154,7 @@ function ActionContent() {
       </div>
       
       {/* Dynamic Action Section based on state */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem", marginTop: "0.5rem", padding: "1.5rem", borderRadius: "8px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem", marginTop: "0.5rem", padding: "1.5rem", borderRadius: "8px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.1)" }}>
         {status === "loading" && (
           <>
             <Loader2 className="animate-spin" size={32} color="var(--accent-cyan)" />

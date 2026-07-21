@@ -1,9 +1,11 @@
 import { StateGraph, START, END, MemorySaver, Annotation } from "@langchain/langgraph";
-import { MarketingAgent } from "../agents/marketing";
+import { EngineeringAgent } from "../agents/engineering";
 import { FinanceAgent } from "../agents/finance";
+import { QAAgent } from "../agents/qa";
 import { AgentNotionClient } from "../notion/client";
 import { sendSlackMessage } from "../tools/slack";
 import { sendApprovalEmail } from "../tools/email";
+import { createGithubIssue } from "../tools/github";
 
 // Define the state for the workflow
 export const GraphState = Annotation.Root({
@@ -12,34 +14,36 @@ export const GraphState = Annotation.Root({
   proposal: Annotation<any>(),
   budgetApprovedByFinance: Annotation<boolean>(),
   financeFeedback: Annotation<string>(),
+  qaChecklist: Annotation<any>(),
   notionPageId: Annotation<string>(),
   humanApproved: Annotation<boolean>(),
 });
 
-const marketingAgent = new MarketingAgent();
+const engineeringAgent = new EngineeringAgent();
 const financeAgent = new FinanceAgent();
+const qaAgent = new QAAgent();
 
 // Load tokens from env (or run in mock mode if absent)
-const marketingNotion = new AgentNotionClient("Marketing", process.env.NOTION_MARKETING_TOKEN);
+const engineeringNotion = new AgentNotionClient("Engineering", process.env.NOTION_ENGINEERING_TOKEN || process.env.NOTION_MARKETING_TOKEN);
 const financeNotion = new AgentNotionClient("Finance", process.env.NOTION_FINANCE_TOKEN);
 
 /**
- * Node: Marketing proposes or revises the campaign
+ * Node: Engineering proposes or revises the architecture
  */
-async function marketingNode(state: typeof GraphState.State) {
+async function engineeringNode(state: typeof GraphState.State) {
   let newProposal;
   if (!state.proposal) {
-    newProposal = await marketingAgent.proposeCampaign(state.goal);
+    newProposal = await engineeringAgent.proposeImplementation(state.goal);
   } else {
-    const revisedBudget = await marketingAgent.reviseBudget(state.proposal, state.financeFeedback);
-    newProposal = { ...state.proposal, budget: revisedBudget };
+    const revised = await engineeringAgent.reviseBudget(state.proposal, state.financeFeedback);
+    newProposal = { ...state.proposal, budget: revised.budget, revisedDescription: revised.revisedDescription };
   }
   
-  await marketingNotion.logCampaignProposal({
+  await engineeringNotion.logCampaignProposal({
     title: newProposal.title,
     budget: newProposal.budget,
     status: "Draft",
-    rationale: state.financeFeedback ? `Revised based on Finance feedback: ${state.financeFeedback}` : "Initial proposal generated for goal"
+    rationale: state.financeFeedback ? `Revised based on Finance feedback: ${state.financeFeedback}\nCuts: ${newProposal.revisedDescription}` : "Initial proposal generated for goal"
   });
 
   return { proposal: newProposal };
@@ -57,21 +61,29 @@ async function financeNode(state: typeof GraphState.State) {
 }
 
 /**
+ * Node: QA reviews and generates a checklist
+ */
+async function qaNode(state: typeof GraphState.State) {
+  const result = await qaAgent.generateChecklist(state.proposal);
+  console.log(`[QA AGENT] Evaluated risk as ${result.riskLevel}. Generated checklist.`);
+  return { qaChecklist: result };
+}
+
+/**
  * Node: Request Human Approval via Notion
  */
 async function requestHumanApprovalNode(state: typeof GraphState.State, config?: any) {
-  // Finance requests the final approval since they approved the budget internally
-  const pageId = await financeNotion.requestHumanApproval(state.proposal.title, state.proposal.budget, state.financeFeedback);
+  // Request final approval using the enhanced Notion integration
+  const pageId = await financeNotion.requestHumanApproval(state.proposal, state.financeFeedback || "QA Checklist Generated.", state.qaChecklist);
   console.log(`\n*** ORCHESTRATOR PAUSED ***`);
   console.log(`[SYSTEM] Creating Approval Request in Notion...`);
   
   // Actually send the email (will use Ethereal if no SMTP credentials exist)
   const threadId = config?.configurable?.thread_id || "demo-thread";
-  await sendApprovalEmail(state.proposal.budget, "AI Expense Predictor", threadId);
+  await sendApprovalEmail(state.proposal.budget, state.proposal.title, threadId);
 
-  console.log(`[SLACK] 🚨 Approval Required for Budget: ₹${state.proposal.budget}. Review in Notion.`);
+  console.log(`[SLACK] 🚨 Approval Required for Engineering Budget: ₹${state.proposal.budget}. Risk: ${state.qaChecklist?.riskLevel}. Review in Notion.`);
   console.log(`[SYSTEM] 🔔 Triggered Browser Push Notification: "Waiting for Manager Approval".`);
-  console.log(`[TWILIO] 📱 SMS Sent: "Approval Needed - Expense Predictor".`);
   console.log(`Workflow is waiting for human approval on Notion page: ${pageId}`);
   return { notionPageId: pageId };
 }
@@ -81,9 +93,10 @@ async function requestHumanApprovalNode(state: typeof GraphState.State, config?:
  */
 async function executeActionNode(state: typeof GraphState.State) {
   if (state.humanApproved) {
-    await sendSlackMessage(`Campaign "${state.proposal.title}" has been fully approved and is now live! Budget: ₹${state.proposal.budget}`);
+    await sendSlackMessage(`Feature "${state.proposal.title}" has been fully approved by Manager and is now in Jira! Budget: ₹${state.proposal.budget}`);
+    await createGithubIssue(state.proposal.title, state.proposal.description, ["engineering", "approved"]);
   } else {
-    console.log(`[ORCHESTRATOR] Campaign was rejected by human.`);
+    console.log(`[ORCHESTRATOR] Feature proposal was rejected by human manager.`);
   }
   return {};
 }
@@ -91,9 +104,9 @@ async function executeActionNode(state: typeof GraphState.State) {
 // Router to decide what happens after Finance reviews
 function routeAfterFinance(state: typeof GraphState.State) {
   if (state.budgetApprovedByFinance) {
-    return "requestHumanApproval";
+    return "qa";
   } else {
-    return "marketing";
+    return "engineering";
   }
 }
 
@@ -107,14 +120,16 @@ function routeAfterApprovalRequest(state: typeof GraphState.State) {
 
 // Build the LangGraph
 const workflow = new StateGraph(GraphState)
-  .addNode("marketing", marketingNode)
+  .addNode("engineering", engineeringNode)
   .addNode("finance", financeNode)
+  .addNode("qa", qaNode)
   .addNode("requestHumanApproval", requestHumanApprovalNode)
   .addNode("executeAction", executeActionNode)
 
-  .addEdge(START, "marketing")
-  .addEdge("marketing", "finance")
+  .addEdge(START, "engineering")
+  .addEdge("engineering", "finance")
   .addConditionalEdges("finance", routeAfterFinance)
+  .addEdge("qa", "requestHumanApproval")
   .addEdge("requestHumanApproval", "executeAction")
   .addEdge("executeAction", END);
 

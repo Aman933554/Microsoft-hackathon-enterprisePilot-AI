@@ -7,7 +7,7 @@ export async function POST(req: Request) {
   try {
     const { goal, maxBudget } = await req.json();
     const result = await runDemo(
-      goal || "Launch a massive summer marketing campaign for our new product line.", 
+      goal || "Build a new scalable messaging queue for microservices.", 
       maxBudget || 50000
     );
     return NextResponse.json({ success: true, ...result });

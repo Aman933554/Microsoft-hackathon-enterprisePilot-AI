@@ -1,0 +1,43 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model WorkflowSession {
+  id            String   @id @default(uuid())
+  goal          String
+  maxBudget     Int
+  status        String   @default("IN_PROGRESS") // IN_PROGRESS, PAUSED, APPROVED, REJECTED, COMPLETED
+  notionPageId  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  decisions     DecisionHistory[]
+  logs          AgentLog[]
+}
+
+model DecisionHistory {
+  id                String   @id @default(uuid())
+  workflowSessionId String
+  workflowSession   WorkflowSession @relation(fields: [workflowSessionId], references: [id])
+  agent             String   // e.g., "FinanceAgent", "QAAgent", "HumanManager"
+  decision          String   // e.g., "APPROVED", "REJECTED", "PROPOSED_REVISION"
+  rationale         String
+  createdAt         DateTime @default(now())
+}
+
+model AgentLog {
+  id                String   @id @default(uuid())
+  workflowSessionId String
+  workflowSession   WorkflowSession @relation(fields: [workflowSessionId], references: [id])
+  agent             String
+  message           String
+  timestamp         DateTime @default(now())
+}

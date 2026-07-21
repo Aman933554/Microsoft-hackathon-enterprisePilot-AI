@@ -16,19 +16,9 @@ export async function sendApprovalEmail(budget: number, feature: string, threadI
       });
       console.log("[EMAIL] Using real SMTP credentials from .env.");
     } else {
-      // Fallback to Ethereal Email (Fake zero-setup inbox)
-      console.log("[EMAIL] No SMTP credentials found. Generating a free Ethereal test account...");
-      const testAccount = await nodemailer.createTestAccount();
-      
-      transporter = nodemailer.createTransport({
-        host: "smtp.ethereal.email",
-        port: 587,
-        secure: false, // true for 465, false for other ports
-        auth: {
-          user: testAccount.user,
-          pass: testAccount.pass,
-        },
-      });
+      console.log("[EMAIL] No SMTP credentials found. Skipping actual email sending to prevent hang.");
+      console.log("[EMAIL] (Mock Mode) Approval email would have been sent for feature:", feature);
+      return; // Skip email sending
     }
 
     // HTML Email Body matching the "Ultimate UI"

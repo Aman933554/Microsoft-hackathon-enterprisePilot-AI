@@ -12,7 +12,7 @@ const askQuestion = (query: string): Promise<string> => {
 };
 
 async function runCLI() {
-  console.log("\x1b[36m🚀 Starting AI-Native Enterprise OS (Premium Terminal Mode)...\x1b[0m\n");
+  console.log("\x1b[36m🚀 Starting AI-Native Enterprise Operating System (Premium Terminal Mode)...\x1b[0m\n");
 
   const threadConfig = { configurable: { thread_id: "cli-thread-" + Date.now() } };
   
@@ -20,7 +20,7 @@ async function runCLI() {
   const inputGoal = await askQuestion("\x1b[33m? What is your campaign goal? \x1b[0m");
   const inputBudgetStr = await askQuestion("\x1b[33m? What is your max finance policy budget? (e.g. 50000) \x1b[0m");
   
-  const initialGoal = inputGoal || "Launch a massive summer marketing campaign for our new product line.";
+  const initialGoal = inputGoal || "Build a new scalable messaging queue for microservices.";
   const maxBudget = parseInt(inputBudgetStr) || 50000;
 
   console.log(`\n\x1b[32m[TRIGGER] New Goal:\x1b[0m ${initialGoal}`);

@@ -1,11 +1,9 @@
-# 🚀 AI-Native Enterprise OS
+# 🚀 AI-Native Enterprise Operating System
 
-**A Next-Generation LangGraph Multi-Agent Orchestrator with True Human-in-the-Loop Architecture.**
-
-![Agent Orchestrator](https://img.shields.io/badge/Status-Hackathon_Ready-success?style=for-the-badge) ![LangGraph](https://img.shields.io/badge/LangGraph-Powered-blue?style=for-the-badge) ![Next.js](https://img.shields.io/badge/Next.js-UI-black?style=for-the-badge)
+Welcome to the future of enterprise automation.
 
 ## 🌟 The Vision
-In the future, human workers won't execute tasks; they will **manage, orchestrate, and approve** tasks executed by specialized AI agents. This project demonstrates an Enterprise OS where Marketing and Finance AI agents autonomously negotiate campaigns, but seamlessly pause to request **real human approval** via Notion before executing financial actions.
+In the future, human workers won't execute tasks; they will **manage, orchestrate, and approve** tasks executed by specialized AI agents. This project demonstrates an AI-Native Enterprise Operating System where Marketing and Finance AI agents autonomously negotiate campaigns, but seamlessly pause to request **real human approval** via Notion before executing financial actions.
 
 ---
 

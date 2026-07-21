@@ -27,7 +27,7 @@ export class FinanceAgent {
 
     const response = await this.llm.invoke([
       new SystemMessage(`You are the Finance Agent. The maximum budget allowed is $${maxBudget}. Generate a polite but firm rejection message explaining the policy limit.`),
-      new HumanMessage(`Marketing requested: $${budget}`)
+      new HumanMessage(`Engineering requested: $${budget}`)
     ]);
 
     console.log(`[FINANCE AGENT] Rejected: ${response.content}`);
