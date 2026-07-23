@@ -10,17 +10,43 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Project {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  status      String   @default("ACTIVE") // ACTIVE, COMPLETED, ON_HOLD
+  budget      Int      @default(0)
+  riskLevel   String   @default("Low") // Low, Medium, High
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  workflows   WorkflowSession[]
+}
+
 model WorkflowSession {
   id            String   @id @default(uuid())
+  projectId     String?
+  project       Project? @relation(fields: [projectId], references: [id])
+  
+  title         String   @default("Untitled Workflow")
   goal          String
+  department    String   @default("Engineering")
   maxBudget     Int
   status        String   @default("IN_PROGRESS") // IN_PROGRESS, PAUSED, APPROVED, REJECTED, COMPLETED
   notionPageId  String?
+  
+  // Analytics fields
+  riskScore     Int      @default(0)
+  roi           Float    @default(0.0)
+  durationMs    Int      @default(0)
+  budgetSavings Int      @default(0)
+  
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   decisions     DecisionHistory[]
   logs          AgentLog[]
+  auditLogs     AuditLog[]
 }
 
 model DecisionHistory {
@@ -40,4 +66,27 @@ model AgentLog {
   agent             String
   message           String
   timestamp         DateTime @default(now())
+}
+
+model AuditLog {
+  id                String   @id @default(uuid())
+  workflowSessionId String
+  workflowSession   WorkflowSession @relation(fields: [workflowSessionId], references: [id])
+  timestamp         DateTime @default(now())
+  agent             String
+  reason            String
+  input             String?
+  output            String?
+  status            String
+  externalActions   String?
+}
+
+model KnowledgeArticle {
+  id          String   @id @default(uuid())
+  title       String
+  category    String   // e.g., "Engineering Policy", "Finance Policy", "Architecture"
+  content     String
+  tags        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

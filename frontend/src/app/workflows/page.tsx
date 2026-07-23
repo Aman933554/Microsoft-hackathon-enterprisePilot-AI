@@ -7,13 +7,15 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 export default function WorkflowsPage() {
-  const [activeTab, setActiveTab] = useState("Marketing & Finance Sync");
+  const [activeTab, setActiveTab] = useState("Enterprise Architecture Pipeline");
+  const [isRunning, setIsRunning] = useState(false);
+  const [logs, setLogs] = useState<string[]>([]);
 
   const workflows = [
     {
       id: 1,
-      title: "Marketing & Finance Sync",
-      description: "Autonomous negotiation between creative and budget policies.",
+      title: "Enterprise Architecture Pipeline",
+      description: "Autonomous negotiation between Engineering budget and Finance policies.",
       status: "Active",
       runs: 142,
       color: "brand-emerald",
@@ -45,6 +47,42 @@ export default function WorkflowsPage() {
     "muted-foreground": { bg10: "bg-muted-foreground/10", border30: "border-muted-foreground/30", text: "text-slate-400", bg20: "bg-muted-foreground/20" }
   };
 
+  const handleRunWorkflow = async () => {
+    setIsRunning(true);
+    setLogs(["🚀 Starting AI-Native Enterprise OS Demo from Studio..."]);
+
+    try {
+      const res = await fetch("/api/run-agent", { 
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ goal: "Feature: Workflow Studio Auto-Test", maxBudget: 50000 })
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        let index = 0;
+        const interval = setInterval(() => {
+          if (index < data.logs.length) {
+            setLogs(prev => [...prev, data.logs[index]]);
+            index++;
+          } else {
+            clearInterval(interval);
+            setIsRunning(false);
+            if (data.isPaused) {
+              setLogs(prev => [...prev, "⏳ Workflow Paused: Waiting for human approval via Notion."]);
+            }
+          }
+        }, 1500); 
+      } else {
+        setLogs(prev => [...prev, "❌ Error: " + data.error]);
+        setIsRunning(false);
+      }
+    } catch (err: any) {
+      setLogs(prev => [...prev, "❌ Connection Error: " + err.message]);
+      setIsRunning(false);
+    }
+  };
+
   return (
     <div className="animate-in fade-in duration-500 pb-10 h-[calc(100vh-6rem)] flex flex-col">
       <header className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 pt-4 shrink-0">
@@ -60,7 +98,7 @@ export default function WorkflowsPage() {
           </div>
         </div>
         <div className="flex gap-3">
-          <button className="flex items-center gap-2 px-5 py-2.5 rounded-md bg-[#09222b] border border-[rgba(255,255,255,0.08)] text-xs font-semibold text-white hover:bg-white/5 transition-colors shadow-[0_2px_10px_rgba(255,255,255,0.05)]">
+          <button className="flex items-center gap-2 px-5 py-2.5 rounded-md bg-[#1c263f] border border-white/5 text-xs font-semibold text-white hover:bg-white/5 transition-colors shadow-[0_2px_10px_rgba(255,255,255,0.05)]">
             <Plus size={14} /> Create New Workflow
           </button>
         </div>
@@ -86,8 +124,8 @@ export default function WorkflowsPage() {
               className={cn(
                 "luxury-card p-5 transition-all duration-300 cursor-pointer group flex flex-col",
                 activeTab === wf.title 
-                  ? "border-brand-purple/50 bg-[#09222b] shadow-inner" 
-                  : "hover:bg-[#09222b] bg-[#021114] hover:translate-x-1"
+                  ? "border-brand-purple/50 bg-[#1c263f] shadow-inner" 
+                  : "hover:bg-[#1c263f] bg-[#131b2f] hover:translate-x-1"
               )}
             >
               <div className="flex gap-4 items-start mb-4">
@@ -108,7 +146,7 @@ export default function WorkflowsPage() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between mt-auto pt-4 border-t border-[rgba(255,255,255,0.05)]">
+              <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/5">
                 <div className="flex items-center">
                   {wf.nodes.map((NodeIcon, i) => (
                     <div key={i} className="w-6 h-6 rounded-full bg-background border border-white/10 flex items-center justify-center -ml-1 first:ml-0 shadow-sm relative z-10">
@@ -132,8 +170,8 @@ export default function WorkflowsPage() {
         </div>
 
         {/* Right Area: Interactive Canvas */}
-        <div className="flex-1 luxury-card bg-[#021114] overflow-hidden flex flex-col relative">
-          <div className="px-6 py-4 border-b border-[rgba(255,255,255,0.05)] bg-[#09222b] flex items-center justify-between shrink-0 shadow-inner">
+        <div className="flex-1 luxury-card bg-[#131b2f] overflow-hidden flex flex-col relative">
+          <div className="px-6 py-4 border-b border-white/5 bg-[#1c263f] flex items-center justify-between shrink-0 shadow-inner">
             <div>
               <h2 className="text-base font-semibold tracking-tight text-white flex items-center gap-2 mb-0.5">
                 {activeTab}
@@ -145,19 +183,28 @@ export default function WorkflowsPage() {
             </div>
             
             <div className="flex gap-2">
+              {activeTab === "Enterprise Architecture Pipeline" && !isRunning && (
+                <button 
+                  onClick={handleRunWorkflow}
+                  className="px-4 py-1.5 rounded-md bg-brand-emerald/20 hover:bg-brand-emerald/30 border border-brand-emerald/40 text-brand-emerald text-xs font-bold transition-all shadow-[0_0_15px_rgba(16,185,129,0.2)] flex items-center gap-1.5"
+                >
+                  <Play size={14} fill="currentColor" /> Run Demo
+                </button>
+              )}
+              {isRunning && (
+                <button className="px-4 py-1.5 rounded-md bg-yellow-500/20 border border-yellow-500/40 text-yellow-500 text-xs font-bold flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" /> Running...
+                </button>
+              )}
               <button className="px-3 py-1.5 rounded-md bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium transition-colors">
                 View Logs
-              </button>
-              <button className="px-3 py-1.5 rounded-md bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium transition-colors">
-                Export JSON
               </button>
             </div>
           </div>
           
           <div className="flex-1 relative">
-            {activeTab === "Marketing & Finance Sync" ? (
-              // Re-use our awesome React Flow Component but with dummy logs so it renders fully.
-              <AgentGraph logs={["[SYSTEM] Initializing", "[MARKETING AGENT] Running strategy", "[FINANCE AGENT] Reviewing"]} isRunning={true} />
+            {activeTab === "Enterprise Architecture Pipeline" ? (
+              <AgentGraph logs={logs.length > 0 ? logs : ["[SYSTEM] Ready to execute. Click 'Run Demo' to start."]} isRunning={isRunning} isFullScreen={true} isLiveMode={isRunning} />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center flex-col text-slate-400 gap-4">
                 <Workflow size={48} className="opacity-20" />

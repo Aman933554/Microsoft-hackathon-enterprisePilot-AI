@@ -4,34 +4,34 @@
 
 @layer base {
   :root {
-    /* Premium Cyberpunk Emerald Theme */
-    --background: 220 50% 2%;     /* #030509 */
-    --foreground: 210 40% 98%;    
+    /* Premium Midnight Navy Theme */
+    --background: 222 47% 8%;     /* Deep Midnight Navy #0B1120 */
+    --foreground: 210 40% 98%;    /* Off-white */
     
-    --card: 220 30% 6%;          /* #0B0E14 */
+    --card: 222 42% 13%;          /* Ocean Blue #131B2F */
     --card-foreground: 210 40% 98%;
     
-    --popover: 220 30% 6%;
+    --popover: 222 42% 13%;
     --popover-foreground: 210 40% 98%;
     
-    --primary: 152 76% 40%;      /* Emerald-ish */
+    --primary: 210 100% 60%;      /* Bright Blue Accent */
     --primary-foreground: 0 0% 100%;
     
-    --secondary: 220 30% 10%;    
-    --secondary-foreground: 215 20% 65%;
+    --secondary: 260 60% 65%;     /* Soft Purple */
+    --secondary-foreground: 0 0% 100%;
     
-    --muted: 220 30% 10%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 222 30% 20%;         /* Muted Navy */
+    --muted-foreground: 215 20% 65%;
     
-    --accent: 220 30% 10%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 190 90% 50%;        /* Cyan Accent */
+    --accent-foreground: 0 0% 10%;
     
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
     
-    --border: 220 20% 15%;
-    --input: 220 30% 10%;
-    --ring: 152 76% 40%;         
+    --border: 230 20% 12%;
+    --input: 230 20% 10%;
+    --ring: 180 100% 40%;         
     
     --radius: 20px;
   }
@@ -39,80 +39,65 @@
 
 @layer base {
   * {
-    border-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.05);
   }
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
-    background-color: #030509;
+    background-color: hsl(var(--background));
+    /* Ambient background glow */
+    background-image: 
+      radial-gradient(circle at 15% 50%, rgba(6, 182, 212, 0.03) 0%, transparent 50%),
+      radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.03) 0%, transparent 50%);
+    background-attachment: fixed;
   }
 }
 
 /* Premium Enterprise UI Utilities */
 @layer utilities {
   .luxury-card {
-    @apply bg-[#0B0E14] border border-[#10B981]/10 rounded-[20px] shadow-[inset_0_1px_1px_rgba(255,255,255,0.02),0_4px_12px_rgba(0,0,0,0.3)] transition-all duration-300;
+    @apply bg-card/60 backdrop-blur-2xl border border-white/5 rounded-[20px] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05),0_8px_32px_rgba(0,0,0,0.4)] transition-all duration-500 ease-out;
   }
   
   .luxury-card-hover {
-    @apply hover:border-[#10B981]/30 hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_8px_32px_-4px_rgba(16,185,129,0.15)] hover:-translate-y-[2px];
-  }
-
-  .luxury-panel {
-    @apply bg-[#030509] border border-[#10B981]/10 rounded-[24px];
-  }
-
-  .soft-shadow {
-    @apply shadow-[inset_0_1px_1px_rgba(255,255,255,0.02),0_4px_12px_rgba(0,0,0,0.3)];
-  }
-
-  .gradient-border {
-    position: relative;
-  }
-  .gradient-border::before {
-    content: "";
-    position: absolute;
-    inset: -1px;
-    border-radius: inherit;
-    padding: 1px;
-    background: linear-gradient(180deg, rgba(16,185,129,0.3) 0%, rgba(16,185,129,0.05) 100%);
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
+    @apply hover:border-primary/30 hover:bg-card/80 hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_0_40px_rgba(6,182,212,0.15)] hover:-translate-y-1;
   }
 
   .glass-panel {
-    @apply bg-[#030509]/60 backdrop-blur-xl border border-[#10B981]/10 rounded-[24px];
-  }
-  
-  .glass-card {
-    @apply luxury-card;
+    @apply bg-card/40 backdrop-blur-3xl border border-white/10 rounded-[24px] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)];
   }
   
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-emerald to-brand-success;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500;
   }
 
   .text-gradient-purple {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-success to-brand-cyan;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-500;
   }
   
   .pulse-ring {
-    animation: ring-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    animation: ring-pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
   
   @keyframes ring-pulse {
-    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
-    70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    0% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(6, 182, 212, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); }
+  }
+
+  /* Custom Glow Buttons */
+  .btn-glow {
+    @apply relative overflow-hidden bg-primary/10 text-primary border border-primary/30 rounded-full px-6 py-2 font-medium transition-all duration-300;
+  }
+  .btn-glow:hover {
+    @apply bg-primary/20 border-primary/60 shadow-[0_0_20px_rgba(6,182,212,0.4)];
   }
 }
 
-/* Base resets & scrollbars for enterprise feel */
+/* Scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -120,10 +105,10 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1); 
+  background: rgba(255, 255, 255, 0.05); 
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2); 
+  background: rgba(255, 255, 255, 0.15); 
 }

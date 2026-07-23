@@ -1,228 +1,197 @@
 "use client";
 
 import React, { useState } from "react";
-import { Settings, Key, Database, Shield, Bell, CheckCircle2, Bot, FileText, Webhook, Users, Sliders, Globe, Lock, Save, Eye, EyeOff } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
-
-type Tab = "general" | "models" | "integrations" | "security";
+import { Settings, User, Bell, Shield, Key, Database, CheckCircle, Loader2 } from "lucide-react";
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<Tab>("general");
-  const [saved, setSaved] = useState(false);
-  const [showKey, setShowKey] = useState(false);
+  const [activeTab, setActiveTab] = useState("Profile");
+  const [firstName, setFirstName] = useState("Aman");
+  const [lastName, setLastName] = useState("Sharma");
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // Form states
-  const [workspaceName, setWorkspaceName] = useState("Nexus Enterprise");
-  const [devMode, setDevMode] = useState(true);
-  const [twoFactor, setTwoFactor] = useState(false);
-
-  const handleSave = () => {
-    setSaved(true);
+  const handleSaveProfile = () => {
+    setIsSaving(true);
+    // Simulate API call
     setTimeout(() => {
-      setSaved(false);
-      window.dispatchEvent(new CustomEvent("new-notification", { 
-        detail: { title: "Settings Saved", message: "Your system configurations have been updated." } 
-      }));
-    }, 2000);
+      setIsSaving(false);
+      setSaveSuccess(true);
+      // Reset success message after 3 seconds
+      setTimeout(() => setSaveSuccess(false), 3000);
+    }, 1500);
   };
 
+  const tabs = [
+    { name: "Profile", icon: User },
+    { name: "Notifications", icon: Bell },
+    { name: "Security", icon: Shield },
+    { name: "API Keys", icon: Key },
+    { name: "Data Management", icon: Database },
+  ];
+
   return (
-    <div className="animate-in fade-in duration-500 pb-20">
-      <header className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 pt-4">
-        <div className="flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-white/10 border border-white/20">
-            <Settings size={32} className="text-white" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-white mb-1">System Settings</h1>
-            <p className="text-slate-400 text-sm">
-              Configure your AI-Native Enterprise Operating System and AI agent integrations.
-            </p>
-          </div>
+    <div className="p-8 max-w-[1200px] mx-auto animate-in fade-in duration-500">
+      <div className="flex items-center gap-3 mb-8">
+        <div className="p-3 rounded-xl bg-brand-cyan/10 border border-brand-cyan/20">
+          <Settings className="text-brand-cyan" size={24} />
         </div>
-        <button 
-          onClick={handleSave}
-          disabled={saved}
-          className={cn(
-            "flex items-center gap-2 px-6 py-2.5 rounded-md text-sm font-bold transition-all shadow-[0_2px_10px_rgba(255,255,255,0.05)]",
-            saved ? "bg-brand-emerald text-black" : "bg-white text-black hover:bg-gray-200"
-          )}
-        >
-          {saved ? <CheckCircle2 size={16} /> : <Save size={16} />}
-          {saved ? "Saved Successfully" : "Save Changes"}
-        </button>
-      </header>
+        <div>
+          <h1 className="text-3xl font-bold text-white tracking-tight">System Settings</h1>
+          <p className="text-slate-400 mt-1">Manage your EnterpriseOS preferences and configurations.</p>
+        </div>
+      </div>
 
-      <div className="flex flex-col lg:flex-row gap-8">
-        {/* Sidebar Tabs */}
-        <div className="w-full lg:w-64 flex flex-col gap-2 shrink-0">
-          <button 
-            onClick={() => setActiveTab("general")}
-            className={cn("flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-colors", activeTab === "general" ? "bg-[#09222b] border border-[rgba(255,255,255,0.08)] text-brand-cyan" : "text-slate-400 hover:bg-white/5 hover:text-white")}
-          >
-            <Globe size={18} /> General
-          </button>
-          <button 
-            onClick={() => setActiveTab("models")}
-            className={cn("flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-colors", activeTab === "models" ? "bg-[#09222b] border border-[rgba(255,255,255,0.08)] text-brand-purple" : "text-slate-400 hover:bg-white/5 hover:text-white")}
-          >
-            <Bot size={18} /> AI Models & Logic
-          </button>
-          <button 
-            onClick={() => setActiveTab("integrations")}
-            className={cn("flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-colors", activeTab === "integrations" ? "bg-[#09222b] border border-[rgba(255,255,255,0.08)] text-brand-emerald" : "text-slate-400 hover:bg-white/5 hover:text-white")}
-          >
-            <Webhook size={18} /> Integrations
-          </button>
-          <button 
-            onClick={() => setActiveTab("security")}
-            className={cn("flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-colors", activeTab === "security" ? "bg-[#09222b] border border-[rgba(255,255,255,0.08)] text-red-400" : "text-slate-400 hover:bg-white/5 hover:text-white")}
-          >
-            <Shield size={18} /> Security & Access
-          </button>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        {/* Sidebar menu */}
+        <div className="md:col-span-1 space-y-2">
+          {tabs.map((tab) => (
+            <button
+              key={tab.name}
+              onClick={() => setActiveTab(tab.name)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all text-sm ${
+                activeTab === tab.name
+                  ? "bg-brand-cyan/10 text-brand-cyan border border-brand-cyan/20"
+                  : "text-slate-400 hover:text-white hover:bg-white/5 border border-transparent"
+              }`}
+            >
+              <tab.icon size={16} /> {tab.name}
+            </button>
+          ))}
         </div>
 
-        {/* Content Area */}
-        <div className="flex-1 luxury-card p-8 bg-[#021114] min-h-[500px]">
-          <AnimatePresence mode="wait">
+        {/* Content area */}
+        <div className="md:col-span-3">
+          <div className="bg-[#0b1120] border border-white/5 rounded-2xl p-6 shadow-xl min-h-[400px]">
+            <h2 className="text-xl font-semibold text-white mb-6 border-b border-white/5 pb-4">{activeTab} Information</h2>
             
-            {activeTab === "general" && (
-              <motion.div key="general" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.2 }} className="space-y-8">
-                <div>
-                  <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-1"><Globe size={20} className="text-brand-cyan" /> Workspace Preferences</h3>
-                  <p className="text-sm text-slate-400 mb-6">Manage basic settings for your enterprise environment.</p>
+            {activeTab === "Profile" && (
+              <div className="space-y-6 animate-in fade-in">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">First Name</label>
+                    <input 
+                      type="text" 
+                      value={firstName} 
+                      onChange={(e) => setFirstName(e.target.value)}
+                      className="w-full bg-[#131b2f] border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-brand-cyan transition-colors" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Last Name</label>
+                    <input 
+                      type="text" 
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      className="w-full bg-[#131b2f] border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-brand-cyan transition-colors" 
+                    />
+                  </div>
                 </div>
 
-                <div className="grid gap-6 max-w-2xl">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Workspace Name</label>
-                    <input type="text" value={workspaceName} onChange={e => setWorkspaceName(e.target.value)} className="w-full bg-[#09222b] border border-[rgba(255,255,255,0.08)] rounded-md px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-cyan transition-colors" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Admin Email Address</label>
-                    <input type="email" defaultValue="admin@nexus-corp.com" className="w-full bg-[#09222b] border border-[rgba(255,255,255,0.08)] rounded-md px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-cyan transition-colors" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Default Timezone</label>
-                    <select className="w-full bg-[#09222b] border border-[rgba(255,255,255,0.08)] rounded-md px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-cyan transition-colors cursor-pointer">
-                      <option value="pst">Pacific Time (PT)</option>
-                      <option value="est">Eastern Time (ET)</option>
-                      <option value="utc">Coordinated Universal Time (UTC)</option>
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Email Address</label>
+                  <input type="email" defaultValue="john.doe@enterpriseos.ai" className="w-full bg-[#131b2f] border border-white/10 rounded-lg px-4 py-2.5 text-slate-400 cursor-not-allowed focus:outline-none transition-colors" disabled />
+                  <p className="text-xs text-slate-500 mt-2">Email address cannot be changed for enterprise accounts without admin approval.</p>
                 </div>
-              </motion.div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Role</label>
+                  <input type="text" defaultValue="Enterprise Manager" className="w-full bg-[#131b2f] border border-white/10 rounded-lg px-4 py-2.5 text-slate-400 cursor-not-allowed focus:outline-none transition-colors" disabled />
+                </div>
+                
+                <div className="pt-4 border-t border-white/5 flex justify-end">
+                  <button 
+                    onClick={handleSaveProfile}
+                    disabled={isSaving || saveSuccess}
+                    className={`px-6 py-2.5 font-bold rounded-lg transition-all flex items-center gap-2 ${
+                      saveSuccess 
+                        ? 'bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]' 
+                        : isSaving
+                        ? 'bg-brand-cyan/50 text-black cursor-not-allowed'
+                        : 'bg-brand-cyan text-black hover:bg-brand-cyan/90 shadow-[0_0_15px_rgba(6,182,212,0.3)]'
+                    }`}
+                  >
+                    {isSaving && <Loader2 size={18} className="animate-spin" />}
+                    {saveSuccess && <CheckCircle size={18} />}
+                    {saveSuccess ? 'Changes Saved' : isSaving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+              </div>
             )}
 
-            {activeTab === "models" && (
-              <motion.div key="models" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.2 }} className="space-y-8">
-                <div>
-                  <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-1"><Bot size={20} className="text-brand-purple" /> AI Models & Logic</h3>
-                  <p className="text-sm text-slate-400 mb-6">Configure the underlying LLMs that power your autonomous agents.</p>
+            {activeTab === "Notifications" && (
+              <div className="space-y-6 animate-in fade-in text-slate-300">
+                <p>Configure how you receive alerts and updates.</p>
+                <div className="space-y-4 mt-4">
+                  {["Email Notifications", "Push Notifications", "Slack Integration Alerts", "Weekly Digest"].map(setting => (
+                    <div key={setting} className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10">
+                      <span>{setting}</span>
+                      <input type="checkbox" defaultChecked className="w-5 h-5 accent-brand-cyan cursor-pointer" />
+                    </div>
+                  ))}
                 </div>
-
-                <div className="grid gap-6 max-w-2xl">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Default Global Model</label>
-                    <select className="w-full bg-[#09222b] border border-[rgba(255,255,255,0.08)] rounded-md px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-purple transition-colors cursor-pointer">
-                      <option>GPT-4o (Recommended)</option>
-                      <option>Claude 3.5 Sonnet</option>
-                      <option>Gemini 1.5 Pro</option>
-                      <option>Llama 3 70B (Local)</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Primary API Key</label>
-                    <div className="relative">
-                      <input type={showKey ? "text" : "password"} defaultValue="sk-proj-9x8f7s6d5a4q3w2e1r0..." className="w-full bg-[#09222b] border border-[rgba(255,255,255,0.08)] rounded-md pl-4 pr-12 py-2.5 text-sm text-white focus:outline-none focus:border-brand-purple transition-colors font-mono" />
-                      <button type="button" onClick={() => setShowKey(!showKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors">
-                        {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest">Model Temperature (0.0 - 1.0)</label>
-                      <span className="text-xs text-brand-purple font-mono">0.2</span>
-                    </div>
-                    <input type="range" min="0" max="1" step="0.1" defaultValue="0.2" className="w-full accent-brand-purple cursor-pointer" />
-                    <p className="text-xs text-slate-400 mt-2">Lower values produce more deterministic, factual responses. Higher values increase creativity.</p>
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 bg-[#09222b] border border-[rgba(255,255,255,0.08)] rounded-lg mt-4">
-                    <div>
-                      <h4 className="font-semibold text-white text-sm mb-1">Developer Mode (Mock Agents)</h4>
-                      <p className="text-xs text-slate-400">Skip actual API calls and use simulated agent responses for faster local testing.</p>
-                    </div>
-                    <div 
-                      onClick={() => setDevMode(!devMode)}
-                      className={cn("w-11 h-6 rounded-full relative cursor-pointer transition-colors", devMode ? "bg-brand-purple" : "bg-white/10")}
-                    >
-                      <div className={cn("absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform", devMode && "translate-x-5")} />
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
+              </div>
             )}
 
-            {activeTab === "integrations" && (
-              <motion.div key="integrations" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.2 }} className="space-y-8">
-                <div>
-                  <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-1"><Webhook size={20} className="text-brand-emerald" /> Core Integrations</h3>
-                  <p className="text-sm text-slate-400 mb-6">Manage access tokens for primary external systems.</p>
-                </div>
-
-                <div className="grid gap-6 max-w-2xl">
+            {activeTab === "Security" && (
+              <div className="space-y-6 animate-in fade-in text-slate-300">
+                <p>Manage your account security and authentication methods.</p>
+                <div className="p-4 bg-white/5 rounded-lg border border-white/10 flex items-center justify-between">
                   <div>
-                    <label className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest mb-2"><FileText size={14} /> Notion Integration Token</label>
-                    <input type="password" defaultValue="secret_AbCdEfGhIjKlMnOpQrStUvWxYz" className="w-full bg-[#09222b] border border-[rgba(255,255,255,0.08)] rounded-md px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-emerald transition-colors font-mono" />
+                    <h4 className="font-semibold text-white">Two-Factor Authentication (2FA)</h4>
+                    <p className="text-xs text-slate-400 mt-1">Add an extra layer of security to your account.</p>
                   </div>
-                  <div>
-                    <label className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest mb-2"><Webhook size={14} /> Slack Webhook URL</label>
-                    <input type="url" defaultValue="https://hooks.slack.com/services/T00000000/B00000000/XXXX" className="w-full bg-[#09222b] border border-[rgba(255,255,255,0.08)] rounded-md px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-emerald transition-colors font-mono" />
-                  </div>
+                  <button className="px-4 py-2 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-sm font-medium">Enable 2FA</button>
                 </div>
-              </motion.div>
+                <div className="p-4 bg-white/5 rounded-lg border border-white/10 flex items-center justify-between mt-4">
+                  <div>
+                    <h4 className="font-semibold text-white">Password</h4>
+                    <p className="text-xs text-slate-400 mt-1">Last changed 3 months ago.</p>
+                  </div>
+                  <button className="px-4 py-2 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-sm font-medium">Update</button>
+                </div>
+              </div>
             )}
 
-            {activeTab === "security" && (
-              <motion.div key="security" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.2 }} className="space-y-8">
-                <div>
-                  <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-1"><Shield size={20} className="text-red-400" /> Security & Access</h3>
-                  <p className="text-sm text-slate-400 mb-6">Protect your workspace and manage session policies.</p>
-                </div>
-
-                <div className="grid gap-6 max-w-2xl">
-                  <div className="flex items-center justify-between p-4 bg-[#09222b] border border-red-500/20 rounded-lg">
-                    <div>
-                      <h4 className="font-semibold text-white text-sm mb-1 flex items-center gap-2"><Lock size={14} className="text-red-400" /> Require Two-Factor Authentication</h4>
-                      <p className="text-xs text-slate-400">Force all workspace users to enable 2FA on their accounts.</p>
-                    </div>
-                    <div 
-                      onClick={() => setTwoFactor(!twoFactor)}
-                      className={cn("w-11 h-6 rounded-full relative cursor-pointer transition-colors", twoFactor ? "bg-red-500" : "bg-white/10")}
-                    >
-                      <div className={cn("absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform", twoFactor && "translate-x-5")} />
-                    </div>
+            {activeTab === "API Keys" && (
+              <div className="space-y-6 animate-in fade-in text-slate-300">
+                <p>Manage API keys for integrating EnterpriseOS with external services.</p>
+                <div className="p-4 bg-white/5 rounded-lg border border-white/10">
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="font-medium text-white">Production Key</span>
+                    <span className="text-xs px-2 py-1 bg-green-500/20 text-green-400 rounded">Active</span>
                   </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Idle Session Timeout</label>
-                    <select className="w-full bg-[#09222b] border border-[rgba(255,255,255,0.08)] rounded-md px-4 py-2.5 text-sm text-white focus:outline-none focus:border-red-400 transition-colors cursor-pointer">
-                      <option value="15m">15 Minutes</option>
-                      <option value="1h">1 Hour</option>
-                      <option value="24h">24 Hours</option>
-                      <option value="never">Never (Not Recommended)</option>
-                    </select>
+                  <div className="flex gap-2">
+                    <input type="password" value="sk_live_1234567890abcdef" className="flex-1 bg-[#131b2f] border border-white/10 rounded-lg px-4 py-2 text-slate-400" readOnly />
+                    <button className="px-4 py-2 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-sm">Copy</button>
                   </div>
                 </div>
-              </motion.div>
+                <button className="px-4 py-2 w-full border border-dashed border-white/20 text-slate-400 hover:text-white hover:border-white/40 transition-colors rounded-lg text-sm flex items-center justify-center gap-2">
+                  <Key size={14} /> Generate New Key
+                </button>
+              </div>
             )}
 
-          </AnimatePresence>
+            {activeTab === "Data Management" && (
+              <div className="space-y-6 animate-in fade-in text-slate-300">
+                <p>Export your data or manage your workspace retention policies.</p>
+                <div className="p-4 bg-white/5 rounded-lg border border-white/10 flex items-center justify-between">
+                  <div>
+                    <h4 className="font-semibold text-white">Export Workspace Data</h4>
+                    <p className="text-xs text-slate-400 mt-1">Download all your agents, workflows, and logs in JSON format.</p>
+                  </div>
+                  <button className="px-4 py-2 bg-brand-cyan/20 text-brand-cyan hover:bg-brand-cyan/30 transition-colors rounded-lg text-sm font-medium">Export Data</button>
+                </div>
+                <div className="p-4 bg-red-500/5 rounded-lg border border-red-500/20 flex items-center justify-between mt-4">
+                  <div>
+                    <h4 className="font-semibold text-red-400">Delete Account</h4>
+                    <p className="text-xs text-red-400/70 mt-1">Permanently remove your account and all data.</p>
+                  </div>
+                  <button className="px-4 py-2 bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors rounded-lg text-sm font-medium">Delete</button>
+                </div>
+              </div>
+            )}
+
+          </div>
         </div>
       </div>
     </div>

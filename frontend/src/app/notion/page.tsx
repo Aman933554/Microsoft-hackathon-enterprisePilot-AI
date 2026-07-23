@@ -74,7 +74,7 @@ export default function NotionWorkspacePage() {
           </div>
           <h2 className="text-xl font-bold text-white mb-2">Workspace Connected</h2>
           <p className="text-sm text-slate-400 mb-6">Your Notion workspace is securely linked to the AI agent fleet.</p>
-          <div className="w-full bg-[#09222b] rounded-lg p-4 border border-[rgba(255,255,255,0.08)] text-left space-y-3">
+          <div className="w-full bg-[#1c263f] rounded-lg p-4 border border-white/5 text-left space-y-3">
             <div className="flex justify-between items-center text-xs">
               <span className="text-slate-400">Status</span>
               <span className="text-brand-emerald font-semibold flex items-center gap-1">
@@ -94,7 +94,7 @@ export default function NotionWorkspacePage() {
 
         {/* Databases List */}
         <div className="lg:col-span-2 luxury-card p-0 overflow-hidden flex flex-col">
-          <div className="px-6 py-4 border-b border-white/5 bg-[#09222b] flex justify-between items-center">
+          <div className="px-6 py-4 border-b border-white/5 bg-[#1c263f] flex justify-between items-center">
             <h3 className="font-semibold text-white flex items-center gap-2">
               <Database size={16} className="text-brand-purple" />
               Database Permissions
@@ -106,7 +106,7 @@ export default function NotionWorkspacePage() {
             {databases.map(db => (
               <div key={db.id} className="p-4 px-6 hover:bg-white/5 transition-colors flex items-center justify-between group">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-[#09222b] border border-[rgba(255,255,255,0.08)] flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-lg bg-[#1c263f] border border-white/5 flex items-center justify-center">
                     <FileText size={18} className="text-slate-400 group-hover:text-white transition-colors" />
                   </div>
                   <div>

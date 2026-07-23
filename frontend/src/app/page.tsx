@@ -1,34 +1,133 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import { Play, CheckCircle, Activity, Box, Zap, AlertCircle, Terminal, Cpu, Settings, Bell, Clock, ExternalLink, X } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Play, Activity, Box, Settings, Bell, Terminal, Cpu, FolderKanban, Clock, CheckSquare, DollarSign, CheckCircle, Plus, FileText, ImageIcon, UploadCloud, ShieldAlert, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AgentGraph } from "../components/AgentGraph";
+import { TerminalLog } from "../components/TerminalLog";
+import { ApprovalModal } from "../components/ApprovalModal";
+import { useAuth, SignInButton, UserButton } from "@clerk/nextjs";
+
+function SignedIn({ children }: { children: React.ReactNode }) {
+  const { isSignedIn } = useAuth();
+  if (isSignedIn) return <>{children}</>;
+  return null;
+}
+
+function SignedOut({ children }: { children: React.ReactNode }) {
+  const { isSignedIn, isLoaded } = useAuth();
+  if (!isLoaded || isSignedIn) return null;
+  return <>{children}</>;
+}
+
+type AppStep = "dashboard" | "form" | "loading" | "workflow";
 
 export default function Dashboard() {
+  const [appStep, setAppStep] = useState<AppStep>("dashboard");
   const [isRunning, setIsRunning] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
   const [completed, setCompleted] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const [threadId, setThreadId] = useState("");
+  const [threadId, setThreadId] = useState<string>("");
+  const [aiReasoningText, setAiReasoningText] = useState<string>("");
   const [view, setView] = useState<"graph" | "terminal">("graph");
-  const terminalEndRef = useRef<HTMLDivElement>(null);
-  const [timeRemaining, setTimeRemaining] = useState(1800); // 30 minutes for escalation
+  const [timeRemaining, setTimeRemaining] = useState(1800);
   const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [recentExecutions, setRecentExecutions] = useState<any[]>([]);
+  const [pendingApprovals, setPendingApprovals] = useState<any[]>([]);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [sysHealth, setSysHealth] = useState({
+    latency: 42,
+    errorRate: 0.01,
+    activeAgents: 12,
+    queueSize: 0,
+    riskScore: 60
+  });
 
-  // Interactive Inputs
-  const [goalInput, setGoalInput] = useState("Build AI Expense Predictor feature");
-  const [budgetInput, setBudgetInput] = useState(45000);
-  const [showConfig, setShowConfig] = useState(false);
-
-  // Auto-scroll to bottom of terminal
   useEffect(() => {
-    if (view === "terminal") {
-      terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [logs, view]);
+    const interval = setInterval(() => {
+      setSysHealth(prev => {
+        // Very fast and dramatic fluctuation for demo purposes
+        let newRisk = prev.riskScore + (Math.random() > 0.5 ? 1 : -1) * Math.floor(Math.random() * 30 + 15);
+        if (newRisk < 15) newRisk = Math.floor(Math.random() * 20) + 70; // jump high
+        if (newRisk > 95) newRisk = Math.floor(Math.random() * 20) + 15; // jump low
+        newRisk = Math.max(10, Math.min(95, newRisk));
+        
+        return {
+          latency: Math.max(15, Math.min(200, prev.latency + (Math.random() > 0.5 ? 1 : -1) * Math.floor(Math.random() * 20 + 5))),
+          errorRate: isRunning ? Math.max(0.01, Math.min(0.08, +(prev.errorRate + (Math.random() > 0.5 ? 0.02 : -0.02)).toFixed(2))) : 0.01,
+          activeAgents: isRunning ? 15 : Math.max(8, Math.min(14, prev.activeAgents + (Math.random() > 0.5 ? 1 : -1))),
+          queueSize: isRunning ? Math.floor(Math.random() * 5) + 1 : 0,
+          riskScore: newRisk
+        };
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isRunning]);
 
-  // Timer for Escalation
+  useEffect(() => {
+    if (completed) {
+      setShowSuccessPopup(true);
+      const timer = setTimeout(() => setShowSuccessPopup(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [completed]);
+
+  useEffect(() => {
+    const loadExecutions = async () => {
+      try {
+        const [resWorkflows, resApprovals] = await Promise.all([
+          fetch("/api/workflows"),
+          fetch("/api/approvals")
+        ]);
+        
+        const dataW = await resWorkflows.json();
+        const dataA = await resApprovals.json();
+        
+        if (dataW.success && dataW.workflows) {
+          setRecentExecutions(dataW.workflows);
+        }
+        if (dataA.success && dataA.pendingApprovals) {
+          setPendingApprovals(dataA.pendingApprovals);
+        }
+      } catch (e) {}
+    };
+    loadExecutions();
+    const interval = setInterval(loadExecutions, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Form states
+  const [featureTitle, setFeatureTitle] = useState("AI Expense Tracker");
+  const [description, setDescription] = useState("Build an AI-powered expense tracker that automatically categorizes expenses, detects fraud and generates reports.");
+  const [priority, setPriority] = useState("High");
+  const [department, setDepartment] = useState("Engineering");
+  const [deadline, setDeadline] = useState("15 Days");
+  const [expectedUsers, setExpectedUsers] = useState("5000");
+  const [attachments, setAttachments] = useState<{name: string}[]>([]);
+  const [budget, setBudget] = useState<number | "">(45000);
+  const [template, setTemplate] = useState("Custom");
+
+  const applyTemplate = (val: string) => {
+    setTemplate(val);
+    if (val === "Website Development") {
+      setFeatureTitle("E-commerce Website");
+      setDescription("Humaari company ke liye ek nayi E-commerce website banao jisme payment gateway ho.");
+      setBudget(50000);
+    } else if (val === "Cloud Migration") {
+      setFeatureTitle("AWS Cloud Migration");
+      setDescription("Humara purana data local server se AWS (Cloud) par shift karo.");
+      setBudget(200000);
+    } else if (val === "Mobile App") {
+      setFeatureTitle("Expense Tracker App");
+      setDescription("Ek expense tracker mobile app banani hai jo 5,000 users support kare.");
+      setBudget(120000);
+    } else if (val === "Bug Fixing") {
+      setFeatureTitle("System Bug Fixing");
+      setDescription("System mein bahut errors aa rahe hain, unhe identify karke fix karo.");
+      setBudget(15000);
+    }
+  };
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isPaused) {
@@ -37,14 +136,6 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, [isPaused]);
 
-  const formatTime = (seconds: number) => {
-    const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
-    const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
-    const s = (seconds % 60).toString().padStart(2, '0');
-    return `${h}:${m}:${s}`;
-  };
-
-  // Polling for mobile approval
   useEffect(() => {
     let pollInterval: NodeJS.Timeout;
     if (isPaused && showApprovalModal && threadId) {
@@ -58,7 +149,6 @@ export default function Dashboard() {
             setIsRunning(true);
             setLogs(prev => [...prev, `[SYSTEM] Remote action received via Email: ${data.approved ? "Approved ✅" : "Rejected ❌"}`]);
             
-            // Replay the logs that happened on the backend
             if (data.logs && data.logs.length > 0) {
               let index = 0;
               const logInterval = setInterval(() => {
@@ -82,26 +172,37 @@ export default function Dashboard() {
     return () => clearInterval(pollInterval);
   }, [isPaused, showApprovalModal, threadId]);
 
+  const handleSubmit = () => {
+    setAppStep("loading");
+    setTimeout(() => {
+      startWorkflow();
+    }, 2500);
+  };
 
   const startWorkflow = async () => {
+    setAppStep("workflow");
     setIsRunning(true);
     setLogs([]);
     setCompleted(false);
     setIsPaused(false);
-    setShowConfig(false);
     setShowApprovalModal(false);
     
     setLogs(["🚀 Starting AI-Native Enterprise OS Demo..."]);
+
+    const combinedGoal = `Product: ${template !== "Custom" ? template : "General"}\nFeature: ${featureTitle}\nDescription: ${description}\nPriority: ${priority}\nDepartment: ${department}\nDeadline: ${deadline}\nExpected Users: ${expectedUsers}`;
 
     try {
       const res = await fetch("/api/run-agent", { 
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ goal: goalInput, maxBudget: budgetInput })
+        body: JSON.stringify({ goal: combinedGoal, maxBudget: budget })
       });
       const data = await res.json();
       
       if (data.success) {
+        if (data.budgetEvaluation?.aiReasoning) {
+          setAiReasoningText(data.budgetEvaluation.aiReasoning);
+        }
         let index = 0;
         const interval = setInterval(() => {
           if (index < data.logs.length) {
@@ -114,6 +215,12 @@ export default function Dashboard() {
                setIsPaused(true);
                setShowApprovalModal(true);
                setThreadId(data.threadId);
+               window.dispatchEvent(new CustomEvent("new-notification", { 
+                 detail: { 
+                   title: "Approval Required", 
+                   message: `Managerial sign-off needed for ${featureTitle} budget proposal.` 
+                 } 
+               }));
                setTimeout(() => setLogs(prev => [...prev, "[SYSTEM] ⏰ Reminder #1 → Slack Message Sent to Manager"]), 5000);
                setTimeout(() => setLogs(prev => [...prev, "[SYSTEM] ⏰ Reminder #2 → Email Sent to Manager"]), 10000);
                setTimeout(() => setLogs(prev => [...prev, "[SYSTEM] 🚨 Escalating to Director Agent due to timeout..."]), 15000);
@@ -169,450 +276,536 @@ export default function Dashboard() {
     }
   };
 
-  const parseLog = (log: string) => {
-    if (!log) return { type: 'system', text: '' };
-    
-    let type = 'system';
-    if (log.includes("[MARKETING AGENT]")) type = 'marketing';
-    if (log.includes("[FINANCE AGENT]")) type = 'finance';
-    if (log.includes("[SLACK]")) type = 'slack';
-    
-    let text = log
-      .replace("[MARKETING AGENT] (Mock Mode)", "")
-      .replace("[FINANCE AGENT] (Mock Mode)", "")
-      .replace("[FINANCE AGENT]", "")
-      .replace("[MARKETING AGENT]", "")
-      .replace("[SLACK]", "")
-      .trim();
-      
-    return { type, text };
-  };
-
-  // Derive budget dynamically from logs
   let currentBudget = 0;
   let status = "Pending";
+  let productTier = "";
 
   for (const log of logs) {
     if (!log) continue;
-    // Extract numbers formatted like $50000 or $50,000 or ₹45000
     const moneyMatch = log.match(/[\$₹]?(\d[\d,]+)/);
-    if (log.includes("Marketing requested:") && moneyMatch) {
+    if ((log.includes("Proposed architecture") || log.includes("Revised budget down to")) && moneyMatch) {
       currentBudget = parseInt(moneyMatch[1].replace(/,/g, ''));
     } else if (log.includes("Budget of") && moneyMatch) {
       currentBudget = parseInt(moneyMatch[1].replace(/,/g, ''));
     }
     
+    const tierMatch = log.match(/deliver a (Good|Best|Premium|Standard) tier product/i);
+    if (tierMatch) {
+      productTier = tierMatch[1];
+    }
+
     if (log.includes("within policy") || log.includes("Approved")) status = "Within Policy";
     else if (log.includes("exceeds our policy") || log.includes("Rejected")) status = "Exceeds Policy";
-    else if (log.includes("proposing") || log.includes("Revised")) status = "Proposed";
+    else if (log.includes("proposing") || log.includes("Revised") || log.includes("Proposed")) status = "Proposed";
   }
 
-  const budgetColor = status === "Within Policy" ? "var(--accent-emerald)" : status === "Exceeds Policy" ? "var(--accent-danger)" : "var(--accent-cyan)";
+  const budgetColor = status === "Within Policy" ? "text-emerald-400" : status === "Exceeds Policy" ? "text-red-400" : "text-cyan-400";
+  const bgBudgetColor = status === "Within Policy" ? "bg-emerald-400" : status === "Exceeds Policy" ? "bg-red-400" : "bg-cyan-400";
   const isBudgetValid = currentBudget > 0;
 
   return (
-    <div style={{ animation: "fadeIn 0.5s ease-out" }}>
-      <header style={{ marginBottom: "2.5rem" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+    <div className="animate-in fade-in duration-500 max-w-[1600px] mx-auto pb-10">
+      
+      <SignedOut>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
+          <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-cyan-400">
+              <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </div>
+          <h1 className="text-3xl font-bold text-white tracking-tight">EnterprisePilot AI</h1>
+          <p className="text-slate-400 max-w-md text-center mb-4">
+            Authentication is required to access the AI Enterprise Operating System. Please sign in to continue.
+          </p>
+          <SignInButton mode="modal">
+            <button className="px-6 py-3 rounded-xl bg-cyan-500 text-black font-bold hover:bg-cyan-400 transition-colors shadow-[0_0_20px_rgba(34,211,238,0.3)]">
+              Sign In to EnterpriseOS
+            </button>
+          </SignInButton>
+        </div>
+      </SignedOut>
+
+      <SignedIn>
+      <header className="mb-10 flex flex-col gap-4">
+        <div className="flex justify-between items-end">
           <div>
-            <h1>Campaign Approvals</h1>
-            <p style={{ color: "var(--text-secondary)", fontSize: "1.1rem" }}>
-              Watch your AI agents negotiate and execute tasks autonomously.
+            <h1 className="text-4xl font-bold tracking-tight mb-2 text-white/90 drop-shadow-sm">EnterprisePilot AI</h1>
+            <p className="text-slate-400 text-lg">
+              AI Employees Running a Company, Humans Making Strategic Decisions.
             </p>
           </div>
           
-          <div style={{ display: "flex", gap: "1rem" }}>
-            <motion.div 
-              style={{ position: 'relative', display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '0.5rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}
-              whileHover={{ background: 'rgba(255,255,255,0.1)' }}
-              onClick={() => { if (isPaused) setShowApprovalModal(!showApprovalModal); }}
-            >
-              <Bell size={20} color="var(--text-secondary)" />
+          <div className="flex items-center gap-4">
+            <AnimatePresence>
               {isPaused && (
-                <motion.div 
-                  initial={{ scale: 0 }} animate={{ scale: 1 }}
-                  style={{ position: 'absolute', top: '6px', right: '6px', width: '8px', height: '8px', background: 'var(--accent-danger)', borderRadius: '50%', boxShadow: '0 0 10px var(--accent-danger)' }}
-                />
+                <motion.button 
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="relative flex items-center gap-2 cursor-pointer px-4 py-2 bg-yellow-500/20 text-yellow-500 rounded-xl hover:bg-yellow-500/30 transition-colors border border-yellow-500/30 font-bold"
+                  whileHover={{ scale: 1.05 }}
+                  onClick={() => setShowApprovalModal(!showApprovalModal)}
+                >
+                  <motion.div 
+                    animate={{ opacity: [1, 0.5, 1] }}
+                    transition={{ repeat: Infinity, duration: 1.5 }}
+                    className="w-2 h-2 bg-yellow-500 rounded-full shadow-[0_0_10px_rgba(234,179,8,0.8)]"
+                  />
+                  1 Action Required
+                </motion.button>
               )}
-            </motion.div>
+            </AnimatePresence>
 
-            <motion.button 
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="btn" 
-              onClick={() => setShowConfig(!showConfig)}
-              style={{ background: showConfig ? "rgba(255,255,255,0.1)" : "" }}
-            >
-              <Settings size={18} /> Configuration
-            </motion.button>
-            <motion.button 
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="btn btn-primary" 
-              onClick={startWorkflow} 
-              disabled={isRunning}
-              style={{ boxShadow: isRunning ? 'none' : 'var(--shadow-glow)' }}
-            >
-              {isRunning ? (
-                <>Running <div className="loader"></div></>
-              ) : (
-                <><Play size={18} fill="currentColor" /> Launch Workflow</>
-              )}
-            </motion.button>
+            {/* Clerk User Profile / Logout Button */}
+            <div className="bg-white/5 border border-white/10 p-2 rounded-xl flex items-center justify-center shadow-lg cursor-pointer hover:bg-white/10 transition-colors">
+               <UserButton appearance={{ elements: { userButtonAvatarBox: "w-10 h-10" } }} />
+            </div>
           </div>
         </div>
-
-        <AnimatePresence>
-          {showConfig && (
-            <motion.div 
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              style={{ overflow: "hidden", marginTop: "1rem" }}
-            >
-              <div className="glass-panel" style={{ display: "flex", flexDirection: "column", gap: "1rem", border: "1px solid var(--accent-cyan)" }}>
-                <div>
-                  <label style={{ display: "block", marginBottom: "0.5rem", color: "var(--text-secondary)", fontSize: "0.85rem" }}>Campaign Goal</label>
-                  <input 
-                    type="text" 
-                    value={goalInput}
-                    onChange={(e) => setGoalInput(e.target.value)}
-                    style={{ 
-                      width: "100%", padding: "0.75rem", borderRadius: "8px", 
-                      background: "rgba(0,0,0,0.5)", border: "1px solid var(--border-light)", color: "white" 
-                    }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: "block", marginBottom: "0.5rem", color: "var(--text-secondary)", fontSize: "0.85rem" }}>
-                    Finance Policy (Max Budget): ₹{budgetInput.toLocaleString()}
-                  </label>
-                  <input 
-                    type="range" 
-                    min="5000" max="200000" step="5000"
-                    value={budgetInput}
-                    onChange={(e) => setBudgetInput(Number(e.target.value))}
-                    style={{ width: "100%", cursor: "pointer", accentColor: "var(--accent-purple)" }}
-                  />
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </header>
 
-      {/* Stats Grid */}
-      <div className="stats-grid">
-        <motion.div whileHover={{ y: -5 }} className="glass-panel stat-card">
-          <Activity className="stat-icon" size={24} />
-          <div className="stat-label">Active Agents</div>
-          <div className="stat-value text-gradient">2</div>
-        </motion.div>
-        
-        <motion.div whileHover={{ y: -5 }} className="glass-panel stat-card">
-          <DollarSignIcon className="stat-icon" size={24} color={isBudgetValid ? budgetColor : "var(--border-light)"} />
-          <div className="stat-label">Current Proposal Budget</div>
-          <motion.div 
-            className="stat-value"
-            animate={{ color: isBudgetValid ? budgetColor : "var(--text-muted)" }}
-            style={{ display: "flex", alignItems: "baseline", gap: "0.5rem" }}
-          >
-            {isBudgetValid ? `₹${currentBudget.toLocaleString()}` : "---"}
-            {status === "Exceeds Policy" && <span style={{ fontSize: "0.8rem", color: "var(--accent-danger)" }}>(Exceeds Policy)</span>}
-            {status === "Within Policy" && <span style={{ fontSize: "0.8rem", color: "var(--accent-emerald)" }}>(Within Policy)</span>}
-          </motion.div>
-          
-          <div className="progress-container">
-             <div 
-               className="progress-bar" 
-               style={{ 
-                 width: isBudgetValid ? '100%' : '0%', 
-                 background: budgetColor 
-               }} 
-             />
+
+      {/* DASHBOARD STEP */}
+      {appStep === "dashboard" && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-8">
+          <div className="flex flex-row items-stretch justify-between gap-4">
+            <div className="grid grid-cols-6 gap-4 flex-1">
+              <div className="glass-panel p-4 flex flex-col gap-2 hover:-translate-y-1 transition-transform cursor-pointer text-center items-center justify-center">
+                <FolderKanban className="text-blue-400 mb-1" size={24} />
+                <div className="text-slate-400 text-[10px] uppercase tracking-widest font-semibold whitespace-nowrap">Projects</div>
+                <div className="text-2xl font-bold text-white">{recentExecutions.length > 0 ? recentExecutions.length + (appStep !== "dashboard" ? 1 : 0) : (15 + (appStep !== "dashboard" ? 1 : 0))}</div>
+              </div>
+              
+              <div className="glass-panel p-4 flex flex-col gap-2 hover:-translate-y-1 transition-transform cursor-pointer text-center items-center justify-center">
+                <Activity className="text-primary mb-1" size={24} />
+                <div className="text-slate-400 text-[10px] uppercase tracking-widest font-semibold whitespace-nowrap">Running Agents</div>
+                <div className="text-2xl font-bold text-gradient">{sysHealth.activeAgents}</div>
+              </div>
+
+              <div className="glass-panel p-4 flex flex-col gap-2 hover:-translate-y-1 transition-transform cursor-pointer text-center items-center justify-center">
+                <CheckSquare className="text-yellow-400 mb-1" size={24} />
+                <div className="text-slate-400 text-[10px] uppercase tracking-widest font-semibold whitespace-nowrap">Pending</div>
+                <div className="text-2xl font-bold text-white">{pendingApprovals.length + (isPaused ? 1 : 0)}</div>
+              </div>
+
+              <div className="glass-panel p-4 flex flex-col gap-2 hover:-translate-y-1 transition-transform cursor-pointer text-center items-center justify-center">
+                <DollarSign className="text-pink-400 mb-1" size={24} />
+                <div className="text-slate-400 text-[10px] uppercase tracking-widest font-semibold whitespace-nowrap">Budget Used</div>
+                <div className="text-2xl font-bold text-white">
+                   ₹{recentExecutions.filter(w => w.status === 'COMPLETED' || w.status === 'APPROVED').reduce((sum, w) => sum + (w.maxBudget || 0), 0).toLocaleString()}
+                </div>
+              </div>
+
+              <div className="glass-panel p-4 flex flex-col gap-2 hover:-translate-y-1 transition-transform cursor-pointer text-center items-center justify-center">
+                <CheckCircle className="text-emerald-400 mb-1" size={24} />
+                <div className="text-slate-400 text-[10px] uppercase tracking-widest font-semibold whitespace-nowrap">Completed</div>
+                <div className="text-2xl font-bold text-white">{recentExecutions.filter(w => w.status === 'COMPLETED' || w.status === 'APPROVED').length + (completed ? 1 : 0)}</div>
+              </div>
+
+              <div className="glass-panel p-4 flex flex-col gap-2 hover:-translate-y-1 transition-transform cursor-pointer text-center items-center justify-center">
+                <Clock className="text-purple-400 mb-1" size={24} />
+                <div className="text-slate-400 text-[10px] uppercase tracking-widest font-semibold whitespace-nowrap">Avg Time</div>
+                <div className="text-2xl font-bold text-white">
+                  {recentExecutions.length > 0 ? 
+                    `${Math.max(1, Math.round(recentExecutions.reduce((s, w) => s + w.durationMs, 0) / recentExecutions.length / 60000))}m` 
+                    : "3m"}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-stretch min-w-[200px]">
+              <button 
+                className="bg-primary text-black hover:bg-primary/90 px-6 w-full rounded-xl font-bold text-lg flex flex-col items-center justify-center gap-2 shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all hover:scale-105"
+                onClick={() => setAppStep("form")}
+              >
+                <Plus size={28} />
+                <span className="text-center leading-tight">New<br/>Feature Request</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="w-full">
+            <h2 className="text-xl font-bold text-white/80 mb-4 px-2">Agent Workflow Map</h2>
+            <div className="glass-panel p-2 h-[400px] border-white/10 rounded-2xl w-full">
+              <AgentGraph logs={[]} isRunning={false} isFullScreen={true} isLiveMode={false} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+            {/* Recent Executions */}
+            <div className="glass-panel p-6 border-white/10 rounded-2xl flex flex-col gap-4">
+              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2"><Clock size={16} /> Recent Executions</h3>
+              <div className="flex flex-col gap-3">
+                {recentExecutions.length > 0 ? recentExecutions.slice(0, 4).map((exec, i) => {
+                  const isSuccess = exec.status === "COMPLETED" || exec.status === "APPROVED";
+                  const isFailed = exec.status === "REJECTED" || exec.status === "FAILED";
+                  const statusColor = isSuccess ? "bg-emerald-500/20 text-emerald-400" : isFailed ? "bg-red-500/20 text-red-400" : "bg-yellow-500/20 text-yellow-400";
+                  
+                  let title = exec.title !== "Untitled Workflow" ? exec.title : "Agent Task";
+                  if (exec.goal && exec.goal.includes("Feature:")) {
+                    title = exec.goal.split("\n")[0].replace("Feature: ", "");
+                  }
+
+                  const timeAgo = Math.round((new Date().getTime() - new Date(exec.createdAt).getTime()) / 60000);
+                  const timeStr = timeAgo < 1 ? "Just now" : `${timeAgo}m ago`;
+                  
+                  return (
+                  <div key={exec.id} className="flex justify-between items-center p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer">
+                    <div className="flex flex-col">
+                      <span className="text-white font-medium text-sm truncate max-w-[200px]">{title}</span>
+                      <span className="text-slate-400 text-xs">{timeStr} • Duration: {Math.max(12, Math.round(exec.durationMs/1000))}s</span>
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <span className={`text-xs font-bold px-2 py-1 rounded-md ${statusColor}`}>{exec.status.replace("_", " ")}</span>
+                      <span className="text-slate-400 text-xs mt-1">ROI: {exec.roi > 0 ? exec.roi + 'x' : (exec.roi === 0 ? '2.4x' : 'N/A')}</span>
+                    </div>
+                  </div>
+                  );
+                }) : (
+                   <div className="text-slate-500 text-sm p-4 text-center">No recent executions found.</div>
+                )}
+              </div>
+            </div>
+
+            {/* Human Approval Queue */}
+            <div className="glass-panel p-6 border-white/10 rounded-2xl flex flex-col gap-4">
+              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2"><CheckSquare size={16} /> Human Approval Queue</h3>
+              <div className="flex flex-col gap-3">
+                {pendingApprovals.length > 0 ? pendingApprovals.slice(0, 3).map((item, i) => {
+                  let title = item.title !== "Untitled Workflow" ? item.title : "Agent Task";
+                  if (item.goal && item.goal.includes("Feature:")) {
+                    title = item.goal.split("\n")[0].replace("Feature: ", "");
+                  }
+                  
+                  return (
+                  <div key={item.id} className="flex flex-col p-3 rounded-xl bg-white/5 border border-white/5 hover:border-yellow-500/30 transition-colors cursor-pointer group" onClick={() => window.location.href = '/approvals'}>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-white font-medium text-sm truncate max-w-[180px]">{title}</span>
+                      <span className="text-yellow-400 text-xs font-bold bg-yellow-500/10 px-2 py-1 rounded-md animate-pulse">Pending</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs text-slate-400">
+                      <span>Waiting on: <span className="text-white">Manager</span></span>
+                      <span>Budget: <span className="text-pink-400">₹{item.maxBudget ? item.maxBudget.toLocaleString() : '45,000'}</span></span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs text-slate-400 mt-1">
+                      <span>Risk: <span className={item.riskScore > 50 ? "text-red-400" : "text-emerald-400"}>{item.riskScore > 50 ? 'High' : 'Medium'}</span></span>
+                      <button className="text-primary hover:text-white transition-colors opacity-0 group-hover:opacity-100 font-bold">Review →</button>
+                    </div>
+                  </div>
+                  );
+                }) : (
+                  <div className="text-slate-500 text-sm p-4 text-center border border-dashed border-white/10 rounded-xl bg-white/[0.02]">
+                     All caught up! No pending approvals.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* System Health & Risk Summary */}
+            <div className="flex flex-col gap-6">
+              <div className="glass-panel p-6 border-white/10 rounded-2xl flex flex-col gap-4 flex-1">
+                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2"><Activity size={16} /> System Health</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col">
+                    <span className="text-slate-400 text-xs mb-1">API Latency</span>
+                    <span className="text-white font-bold text-xl flex items-center gap-2">{sysHealth.latency}ms <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span></span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-slate-400 text-xs mb-1">Error Rate</span>
+                    <span className={sysHealth.errorRate > 0.04 ? "text-yellow-400 font-bold text-xl transition-colors" : "text-emerald-400 font-bold text-xl transition-colors"}>{sysHealth.errorRate.toFixed(2)}%</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-slate-400 text-xs mb-1">Active Agents</span>
+                    <span className="text-white font-bold text-xl">{sysHealth.activeAgents} / 15</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-slate-400 text-xs mb-1">Queue Size</span>
+                    <span className="text-white font-bold text-xl">{sysHealth.queueSize} Tasks</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="glass-panel p-6 border-white/10 rounded-2xl flex flex-col gap-2">
+                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2"><ShieldAlert size={16} /> Risk Summary</h3>
+                <div className="flex justify-between items-end mt-2">
+                  <div className="flex flex-col">
+                    <span className={`text-3xl font-bold flex items-center gap-2 transition-colors ${sysHealth.riskScore < 40 ? 'text-emerald-400' : sysHealth.riskScore < 75 ? 'text-yellow-400' : 'text-red-500'}`}>
+                      <AlertTriangle size={24} /> {sysHealth.riskScore < 40 ? 'Low' : sysHealth.riskScore < 75 ? 'Medium' : 'High'}
+                    </span>
+                    <span className="text-slate-400 text-xs mt-1">Average Enterprise Risk</span>
+                  </div>
+                  <div className="w-24 h-2 bg-white/10 rounded-full overflow-hidden">
+                    <div className={`h-full transition-all duration-1000 ${sysHealth.riskScore < 40 ? 'bg-emerald-400' : sysHealth.riskScore < 75 ? 'bg-yellow-400' : 'bg-red-500'}`} style={{ width: `${sysHealth.riskScore}%` }}></div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </motion.div>
+      )}
 
-        <motion.div whileHover={{ y: -5 }} className="glass-panel stat-card">
-          <Box className="stat-icon" size={24} />
-          <div className="stat-label">Finance Policy Limit</div>
-          <div className="stat-value" style={{ color: "var(--accent-purple)" }}>₹{budgetInput.toLocaleString()}</div>
-        </motion.div>
-      </div>
-
-      <div className="view-toggle" style={{ width: "250px" }}>
-        <button className={view === "graph" ? "active" : ""} onClick={() => setView("graph")}>
-          <Cpu size={14} style={{ display: "inline", marginRight: "4px" }} /> Visual Graph
-        </button>
-        <button className={view === "terminal" ? "active" : ""} onClick={() => setView("terminal")}>
-          <Terminal size={14} style={{ display: "inline", marginRight: "4px" }} /> Terminal Log
-        </button>
-      </div>
-
-      <motion.div 
-        className="glass-panel"
-        style={{ padding: view === 'terminal' ? 0 : '1rem', display: 'flex', flexDirection: 'column' }}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-      >
-        {view === "graph" ? (
-          <AgentGraph logs={logs} isRunning={isRunning} />
-        ) : (
-          <>
-            <div className="terminal-header">
-              <div className="terminal-dots">
-                <div className="dot red"></div>
-                <div className="dot yellow"></div>
-                <div className="dot green"></div>
+      {/* FORM STEP */}
+      {appStep === "form" && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-panel p-8 max-w-3xl mx-auto border border-primary/30 shadow-[0_0_40px_rgba(6,182,212,0.15)] relative">
+          <button 
+            onClick={() => setAppStep("dashboard")}
+            className="absolute top-4 right-4 text-slate-400 hover:text-white"
+          >
+            ✕ Cancel
+          </button>
+          
+          <h2 className="text-2xl font-bold text-white mb-8 border-b border-white/10 pb-4">📝 New Feature Request</h2>
+          
+          <div className="flex flex-col gap-6">
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <label className="block text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2">Quick Template</label>
+                <select value={template} onChange={(e) => applyTemplate(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-primary/50 appearance-none">
+                  <option value="Custom">Custom / Manual</option>
+                  <option value="Website Development">Website Development</option>
+                  <option value="Cloud Migration">Cloud Migration</option>
+                  <option value="Mobile App">Mobile App</option>
+                  <option value="Bug Fixing">Bug Fixing</option>
+                </select>
               </div>
-              <span style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginLeft: "0.5rem", fontFamily: "monospace" }}>
-                agent-orchestrator.exe
-              </span>
-              
-              <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                 {isRunning && (
-                   <motion.div 
-                     initial={{ opacity: 0 }} 
-                     animate={{ opacity: [0, 1, 0] }} 
-                     transition={{ repeat: Infinity, duration: 1.5 }}
-                     style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--accent-cyan)', fontSize: '0.75rem' }}
-                   >
-                     <Activity size={12} /> Live stream
-                   </motion.div>
-                 )}
+              <div>
+                <label className="block text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2">Proposed Budget (₹)</label>
+                <input type="number" value={budget} onChange={(e) => setBudget(e.target.value === "" ? "" : Number(e.target.value))} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-primary/50" />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2">Feature Title</label>
+              <input type="text" value={featureTitle} onChange={(e) => setFeatureTitle(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-primary/50" />
+            </div>
+
+            <div>
+              <label className="block text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2">Description</label>
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-primary/50 resize-none"></textarea>
+            </div>
+
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <label className="block text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2">Priority</label>
+                <select value={priority} onChange={(e) => setPriority(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-primary/50 appearance-none">
+                  <option>High</option>
+                  <option>Medium</option>
+                  <option>Low</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2">Department</label>
+                <select value={department} onChange={(e) => setDepartment(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-primary/50 appearance-none">
+                  <option>Engineering</option>
+                  <option>Marketing</option>
+                  <option>Finance</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <label className="block text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2">Deadline</label>
+                <input type="text" value={deadline} onChange={(e) => setDeadline(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-primary/50" />
+              </div>
+              <div>
+                <label className="block text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2">Expected Users</label>
+                <input type="text" value={expectedUsers} onChange={(e) => setExpectedUsers(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-primary/50" />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2">Attachments</label>
+              <div className="flex flex-wrap gap-4">
+                {attachments.map((file, idx) => (
+                  <div key={idx} className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-xl px-4 py-3 group relative">
+                    {file.name.endsWith('.pdf') ? (
+                      <FileText size={18} className="text-red-400" />
+                    ) : (
+                      <ImageIcon size={18} className="text-blue-400" />
+                    )}
+                    <span className="text-sm text-white/80">{file.name}</span>
+                    <button 
+                      className="absolute -top-2 -right-2 bg-red-500/80 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => setAttachments(prev => prev.filter((_, i) => i !== idx))}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    </button>
+                  </div>
+                ))}
+                
+                <label className="flex items-center justify-center gap-2 border border-dashed border-white/20 rounded-xl px-4 py-3 cursor-pointer hover:border-white/40 bg-white/5 transition-colors">
+                  <input 
+                    type="file" 
+                    className="hidden" 
+                    multiple 
+                    onChange={(e) => {
+                      if (e.target.files) {
+                        const newFiles = Array.from(e.target.files).map(f => ({ name: f.name }));
+                        setAttachments(prev => [...prev, ...newFiles]);
+                      }
+                    }} 
+                  />
+                  <UploadCloud size={18} className="text-slate-400" /> <span className="text-sm text-slate-400">Upload</span>
+                </label>
               </div>
             </div>
             
-            <div className="terminal-container">
-              <div className="terminal-body">
-                {!isRunning && logs.length === 0 && (
-                  <div style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", gap: "1rem" }}>
-                    <AlertCircle size={32} opacity={0.5} />
-                    <p>System idle. Click "Launch Workflow" to start the simulation.</p>
-                  </div>
-                )}
-                
-                <AnimatePresence>
-                  {logs.map((log, i) => {
-                    const { type, text } = parseLog(log);
-                    if (!text) return null;
-                    
-                    return (
-                      <motion.div 
-                        key={i}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="log-line"
-                      >
-                        <span className="log-time">
-                          [{new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit' })}]
-                        </span>
-                        <span className={`log-agent ${type}`}>
-                          {type === 'marketing' && 'Marketing : '}
-                          {type === 'finance' && 'Finance   : '}
-                          {type === 'slack' && 'Slack     : '}
-                          {type === 'system' && '> '}
-                        </span>
-                        <span className="log-content">{text}</span>
-                      </motion.div>
-                    );
-                  })}
-                </AnimatePresence>
-                <div ref={terminalEndRef} />
-              </div>
-            </div>
-          </>
-        )}
-      </motion.div>
-      
-      <AnimatePresence>
-        {isPaused && showApprovalModal && (
-          <>
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)", zIndex: 999 }}
-              onClick={() => setShowApprovalModal(false)}
-            />
-            <motion.div
-              initial={{ opacity: 0, y: 50, scale: 0.95, x: "-50%", y: "-50%" }}
-              animate={{ opacity: 1, scale: 1, x: "-50%", y: "-50%" }}
-              exit={{ opacity: 0, scale: 0.95, x: "-50%", y: "-50%" }}
-              style={{
-                position: "fixed",
-                top: "50%",
-                left: "50%",
-                background: "rgba(10, 10, 10, 0.95)",
-                border: "1px solid rgba(234, 179, 8, 0.4)",
-                padding: "2rem",
-                borderRadius: "16px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "1.5rem",
-                boxShadow: "0 25px 50px -12px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.1)",
-                zIndex: 1000,
-                width: "550px",
-                maxWidth: "90vw"
-              }}
-            >
-              <motion.button 
-                whileHover={{ scale: 1.1, color: "white" }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowApprovalModal(false)}
-                style={{
-                  position: "absolute",
-                  top: "1rem",
-                  right: "1rem",
-                  background: "transparent",
-                  border: "none",
-                  color: "var(--text-muted)",
-                  cursor: "pointer",
-                  padding: "0.25rem",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
+            <div className="mt-4 flex justify-end">
+              <button 
+                onClick={handleSubmit}
+                className="bg-primary text-black hover:bg-primary/90 px-8 py-3 rounded-xl font-bold text-lg flex items-center gap-2 shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all hover:scale-105"
               >
-                <X size={20} />
-              </motion.button>
-              <div style={{ textAlign: "center", borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: "1.5rem" }}>
-                <motion.div 
-                  animate={{ rotate: [0, 10, -10, 0] }} 
-                  transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-                  style={{ display: "inline-block", marginBottom: "1rem" }}
-                >
-                  <AlertCircle size={48} color="#eab308" style={{ filter: "drop-shadow(0 0 12px rgba(234, 179, 8, 0.4))" }} />
-                </motion.div>
-                <h3 style={{ margin: 0, color: "#eab308", fontSize: "1.5rem", letterSpacing: "-0.5px" }}>Waiting for Human Approval</h3>
-                <p style={{ margin: 0, color: "var(--text-secondary)", marginTop: "0.5rem" }}>Workflow is paused pending managerial sign-off.</p>
-              </div>
+                Submit Request <Play size={18} fill="currentColor" />
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-                <div className="glass-panel" style={{ padding: "1rem", display: "flex", flexDirection: "column", gap: "0.5rem", background: "rgba(255,255,255,0.03)" }}>
-                  <h5 style={{ margin: 0, color: "var(--text-muted)", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "1px" }}>Request Details</h5>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: "0.5rem" }}>
-                    <span style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>Feature</span>
-                    <span style={{ color: "white", fontSize: "0.9rem" }}>AI Expense Predictor</span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>Requested By</span>
-                    <span style={{ color: "white", fontSize: "0.9rem" }}>Engineering Agent</span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>Budget</span>
-                    <span style={{ color: "var(--accent-purple)", fontSize: "0.9rem", fontWeight: 600 }}>₹{currentBudget.toLocaleString()}</span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>Risk Level</span>
-                    <span style={{ color: "var(--accent-danger)", fontSize: "0.9rem" }}>Medium</span>
-                  </div>
-                </div>
+      {/* LOADING STEP */}
+      {appStep === "loading" && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-32">
+          <Cpu className="text-primary animate-pulse mb-6" size={64} />
+          <h2 className="text-3xl font-bold text-white mb-4">Engineering Agent Thinking...</h2>
+          <div className="font-mono text-primary text-xl tracking-[0.3em] font-bold">
+            <motion.span
+              initial={{ clipPath: "inset(0 100% 0 0)" }}
+              animate={{ clipPath: "inset(0 0% 0 0)" }}
+              transition={{ duration: 2, ease: "linear" }}
+              className="inline-block"
+            >
+              ████████░░░░
+            </motion.span>
+          </div>
+          <p className="text-slate-400 mt-6 max-w-md text-center">
+            AI Engineering Manager is analyzing {featureTitle} to propose architecture and budget...
+          </p>
+        </motion.div>
+      )}
 
-                <div className="glass-panel" style={{ padding: "1rem", display: "flex", flexDirection: "column", gap: "0.5rem", background: "rgba(255,255,255,0.03)" }}>
-                  <h5 style={{ margin: 0, color: "var(--text-muted)", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "1px" }}>Status Checks</h5>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--text-secondary)", fontSize: "0.9rem", marginTop: "0.5rem" }}>
-                    <CheckCircle size={14} color="var(--accent-emerald)" /> Finance Approved
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--text-secondary)", fontSize: "0.9rem" }}>
-                    <CheckCircle size={14} color="var(--accent-emerald)" /> QA Approved
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--text-secondary)", fontSize: "0.9rem" }}>
-                    <CheckCircle size={14} color="var(--accent-emerald)" /> Engineering Ready
-                  </div>
-                </div>
-              </div>
-
-              <div className="glass-panel" style={{ padding: "1rem", background: "rgba(0,0,0,0.3)" }}>
-                 <h5 style={{ margin: "0 0 1rem 0", color: "var(--text-muted)", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "1px" }}>Notification Escalation</h5>
-                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                   <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                     <span style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", color: "white" }}>
-                       📧 Email Sent <CheckCircle size={14} color="var(--accent-emerald)" />
-                     </span>
-                     <span style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", color: "white" }}>
-                       💬 Slack Delivered <CheckCircle size={14} color="var(--accent-emerald)" />
-                     </span>
-                     <span style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", color: "white" }}>
-                       🔔 Browser Push <CheckCircle size={14} color="var(--accent-emerald)" />
-                     </span>
-                     <span style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", color: "white" }}>
-                       📱 SMS Delivered <CheckCircle size={14} color="var(--accent-emerald)" />
-                     </span>
-                   </div>
-                   <div style={{ textAlign: "center", padding: "1rem", borderLeft: "1px solid rgba(255,255,255,0.1)", minWidth: "160px" }}>
-                     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", color: "var(--text-secondary)", marginBottom: "0.5rem" }}>
-                       <Clock size={14} /> Time Remaining
-                     </div>
-                     <div style={{ fontFamily: "monospace", fontSize: "1.75rem", color: "white", textShadow: "0 0 10px rgba(255,255,255,0.3)" }}>
-                       {formatTime(timeRemaining)}
-                     </div>
-                     <div style={{ fontSize: "0.7rem", color: "var(--accent-danger)", marginTop: "0.25rem" }}>Escalates to VP next</div>
-                   </div>
+      {/* WORKFLOW STEP */}
+      {appStep === "workflow" && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-white">Live Execution</h2>
+            <button 
+              className="text-sm text-slate-400 hover:text-white flex items-center gap-1 bg-white/5 px-3 py-1.5 rounded-lg border border-white/10"
+              onClick={() => setAppStep("dashboard")}
+            >
+              ← Back to Dashboard
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <motion.div className="glass-panel p-6 flex flex-col gap-2 relative overflow-hidden">
+              <div className="flex items-center gap-3 mb-2">
+                 <div className={`p-2 rounded-lg bg-black/30 border ${isBudgetValid ? (status === 'Within Policy' ? 'border-emerald-500/30' : 'border-red-500/30') : 'border-white/5'}`}>
+                    <DollarSignIcon className={isBudgetValid ? budgetColor : "text-white/20"} size={20} />
                  </div>
+                 <div className="text-slate-400 text-sm uppercase tracking-widest font-semibold">Proposal Budget</div>
               </div>
               
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginTop: "0.5rem" }}>
-                <button 
-                  className="btn" 
-                  style={{ gridColumn: "span 2", display: "flex", justifyContent: "center", gap: "0.5rem", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", height: "40px", marginBottom: "0.25rem" }}
-                  onClick={() => window.open("https://notion.so", "_blank")}
-                >
-                  <ExternalLink size={16} /> Open Source of Truth in Notion
-                </button>
-                <button 
-                  className="btn btn-primary" 
-                  style={{ background: "var(--accent-emerald)", color: "black", border: "none", height: "48px", fontWeight: 600, fontSize: "1rem" }}
-                  onClick={() => resumeWorkflow(true)}
-                >
-                  Approve
-                </button>
-                <button 
-                  className="btn btn-primary" 
-                  style={{ background: "var(--accent-danger)", color: "white", border: "none", height: "48px", fontWeight: 600, fontSize: "1rem" }}
-                  onClick={() => resumeWorkflow(false)}
-                >
-                  Reject
-                </button>
+              <motion.div className="flex items-baseline gap-2 mt-1">
+                <span className={`text-3xl font-bold ${isBudgetValid ? budgetColor : "text-white/20"}`}>
+                  {isBudgetValid ? `₹${currentBudget.toLocaleString()}` : "---"}
+                </span>
+                {status === "Exceeds Policy" && <span className="text-xs text-red-400 font-medium tracking-wide">(Exceeds Policy)</span>}
+                {status === "Within Policy" && <span className="text-xs text-emerald-400 font-medium tracking-wide">(Within Policy{productTier ? ` - ${productTier} Tier` : ''})</span>}
+              </motion.div>
+              
+              <div className="w-full h-1.5 bg-black/40 rounded-full mt-4 overflow-hidden">
+                 <div 
+                   className={`h-full transition-all duration-1000 ${bgBudgetColor}`}
+                   style={{ width: isBudgetValid ? '100%' : '0%' }} 
+                 />
               </div>
             </motion.div>
-          </>
-        )}
-      </AnimatePresence>
 
+            <motion.div className="glass-panel p-6 flex flex-col gap-2">
+              <Box className="text-pink-500 mb-2" size={28} />
+              <div className="text-slate-400 text-sm uppercase tracking-widest font-semibold">Policy Limit</div>
+              <div className="text-3xl font-bold text-pink-400">₹{budget.toLocaleString()}</div>
+            </motion.div>
+          </div>
+
+          {aiReasoningText && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="glass-panel p-6 mb-6 border-cyan-500/30 bg-cyan-900/10"
+            >
+              <div className="flex items-center gap-2 mb-2 text-cyan-400">
+                <Activity size={18} />
+                <h3 className="font-semibold text-sm uppercase tracking-widest">AI Budget Recommendation</h3>
+              </div>
+              <p className="text-white/90 leading-relaxed font-medium">
+                {aiReasoningText}
+              </p>
+            </motion.div>
+          )}
+
+          <div className="flex bg-black/40 p-1 rounded-xl w-fit mb-6 border border-white/5">
+            <button 
+              className={`px-6 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${view === "graph" ? "bg-white/10 text-white shadow-sm" : "text-slate-400 hover:text-white/80 hover:bg-white/5"}`} 
+              onClick={() => setView("graph")}
+            >
+              <Cpu size={16} /> Visual Graph
+            </button>
+            <button 
+              className={`px-6 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${view === "terminal" ? "bg-white/10 text-white shadow-sm" : "text-slate-400 hover:text-white/80 hover:bg-white/5"}`} 
+              onClick={() => setView("terminal")}
+            >
+              <Terminal size={16} /> Terminal Log
+            </button>
+          </div>
+
+          <motion.div 
+            className={`glass-panel border-white/10 ${view === 'terminal' ? 'p-0 border-none bg-transparent shadow-none backdrop-blur-none' : 'p-4 h-[600px] w-full'}`}
+          >
+            {view === "graph" ? (
+              <AgentGraph logs={logs} isRunning={isRunning} isFullScreen={false} isLiveMode={isRunning} />
+            ) : (
+              <TerminalLog logs={logs} isRunning={isRunning} />
+            )}
+          </motion.div>
+        </motion.div>
+      )}
+
+      <ApprovalModal 
+        show={isPaused && showApprovalModal} 
+        onClose={() => setShowApprovalModal(false)}
+        onApprove={() => resumeWorkflow(true)}
+        onReject={() => resumeWorkflow(false)}
+        currentBudget={currentBudget > 0 ? currentBudget : budget}
+        timeRemaining={timeRemaining}
+        featureTitle={featureTitle}
+        productTier={productTier}
+      />
+
+      {/* Success Popup */}
       <AnimatePresence>
-        {completed && (
-          <motion.div
+        {showSuccessPopup && (
+          <motion.div 
             initial={{ opacity: 0, y: 50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            style={{
-              position: "fixed",
-              bottom: "2rem",
-              right: "2rem",
-              background: "rgba(16, 185, 129, 0.15)",
-              backdropFilter: "blur(12px)",
-              border: "1px solid rgba(16, 185, 129, 0.3)",
-              padding: "1.5rem",
-              borderRadius: "12px",
-              display: "flex",
-              alignItems: "center",
-              gap: "1rem",
-              boxShadow: "0 10px 40px rgba(0,0,0,0.5)",
-              zIndex: 100
-            }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            className="fixed bottom-8 right-8 z-50"
           >
-            <CheckCircle size={32} color="var(--accent-emerald)" />
-            <div>
-              <h4 style={{ margin: 0, color: "var(--accent-emerald)" }}>Workflow Completed</h4>
-              <p style={{ margin: 0, fontSize: "0.875rem", color: "var(--text-primary)", marginTop: "0.25rem" }}>
-                Notion and Slack have been successfully updated.
-              </p>
+            <div className="bg-brand-emerald/10 border border-brand-emerald/30 px-6 py-4 rounded-2xl shadow-[0_10px_40px_rgba(16,185,129,0.2)] flex items-center gap-4 backdrop-blur-xl">
+              <div className="p-2 bg-brand-emerald/20 rounded-full">
+                <CheckCircle className="text-brand-emerald" size={24} />
+              </div>
+              <div>
+                <h4 className="text-white font-bold text-sm tracking-wide">Workflow Completed</h4>
+                <p className="text-brand-emerald/80 text-xs mt-0.5 font-medium">All tasks executed successfully</p>
+              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+      </SignedIn>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 /**
  * Creates a real GitHub issue if GITHUB_TOKEN is provided, otherwise mocks it.
  */
-export async function createGithubIssue(title: string, body: string, labels: string[]): Promise<string> {
+export async function createGithubIssue(title: string, body: string, labels: string[], assignees: string[] = []): Promise<string> {
   const token = process.env.GITHUB_TOKEN;
   const repo = process.env.GITHUB_REPO || "example/repo"; // Format: owner/repo
 
@@ -10,6 +10,7 @@ export async function createGithubIssue(title: string, body: string, labels: str
     console.log(`[GITHUB MOCK] Created Issue: ${title}`);
     console.log(`[GITHUB MOCK] Repo: ${repo}`);
     console.log(`[GITHUB MOCK] Labels: ${labels.join(", ")}`);
+    console.log(`[GITHUB MOCK] Assignees: ${assignees.join(", ") || "None"}`);
     console.log(`=====================================================\n`);
     return `https://github.com/${repo}/issues/mock-123`;
   }
@@ -25,7 +26,8 @@ export async function createGithubIssue(title: string, body: string, labels: str
       body: JSON.stringify({
         title,
         body,
-        labels
+        labels,
+        assignees
       })
     });
 

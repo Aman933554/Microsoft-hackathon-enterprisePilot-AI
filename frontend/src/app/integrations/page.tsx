@@ -124,12 +124,12 @@ export default function IntegrationsPage() {
             transition={{ delay: i * 0.05 }}
             className={cn(
               "luxury-card p-8 flex flex-col group transition-all",
-              app.status === "Connected" ? "bg-[#021114]" : "bg-[#021114]/50 opacity-80 hover:opacity-100"
+              app.status === "Connected" ? "bg-[#131b2f]" : "bg-[#131b2f]/50 opacity-80 hover:opacity-100"
             )}
           >
             <div className="flex justify-between items-start mb-6">
               <div className="flex gap-5 items-center">
-                <div className="p-3 rounded-xl bg-[#09222b] border border-[rgba(255,255,255,0.08)] flex items-center justify-center shadow-inner">
+                <div className="p-3 rounded-xl bg-[#1c263f] border border-white/5 flex items-center justify-center shadow-inner">
                   {app.icon}
                 </div>
                 <div>
@@ -160,7 +160,7 @@ export default function IntegrationsPage() {
             </p>
 
             <div className="mt-auto space-y-5">
-              <div className="flex justify-between items-center text-[11px] border-t border-[rgba(255,255,255,0.05)] pt-5">
+              <div className="flex justify-between items-center text-[11px] border-t border-white/5 pt-5">
                 <span className="text-slate-400 font-bold uppercase tracking-widest text-[9px]">Sync Frequency</span>
                 <span className="text-white font-semibold">{app.sync}</span>
               </div>
@@ -169,7 +169,7 @@ export default function IntegrationsPage() {
                 <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-3 block">Authorized Scopes</span>
                 <div className="flex flex-wrap gap-2">
                   {app.scopes.map(scope => (
-                    <span key={scope} className="text-[10px] px-2 py-1 rounded bg-[#09222b] border border-[rgba(255,255,255,0.08)] text-white/80 font-mono shadow-sm">
+                    <span key={scope} className="text-[10px] px-2 py-1 rounded bg-[#1c263f] border border-white/5 text-white/80 font-mono shadow-sm">
                       {scope}
                     </span>
                   ))}
@@ -182,7 +182,7 @@ export default function IntegrationsPage() {
                 className={cn(
                   "w-full py-2.5 rounded-md text-xs font-bold transition-all mt-6 shadow-[0_2px_10px_rgba(255,255,255,0.05)] flex items-center justify-center gap-2",
                   app.status === "Connected" 
-                    ? "bg-[#09222b] border border-[rgba(255,255,255,0.08)] hover:bg-white/5 text-white" 
+                    ? "bg-[#1c263f] border border-white/5 hover:bg-white/5 text-white" 
                     : "bg-white text-black hover:bg-gray-200"
                 )}
               >

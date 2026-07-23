@@ -16,9 +16,18 @@ export async function sendApprovalEmail(budget: number, feature: string, threadI
       });
       console.log("[EMAIL] Using real SMTP credentials from .env.");
     } else {
-      console.log("[EMAIL] No SMTP credentials found. Skipping actual email sending to prevent hang.");
-      console.log("[EMAIL] (Mock Mode) Approval email would have been sent for feature:", feature);
-      return; // Skip email sending
+      console.log("[EMAIL] No SMTP credentials found. Generating Ethereal test account for demo...");
+      const testAccount = await nodemailer.createTestAccount();
+      transporter = nodemailer.createTransport({
+        host: "smtp.ethereal.email",
+        port: 587,
+        secure: false,
+        auth: {
+          user: testAccount.user,
+          pass: testAccount.pass,
+        },
+      });
+      console.log("[EMAIL] Ethereal test account generated successfully!");
     }
 
     // HTML Email Body matching the "Ultimate UI"
@@ -47,8 +56,8 @@ export async function sendApprovalEmail(budget: number, feature: string, threadI
         </table>
 
         <div style="text-align: center; margin-top: 30px;">
-          <a href="http://10.169.241.10:3000/action?threadId=${threadId}&budget=${budget}&feature=${encodeURIComponent(feature)}&approved=true" style="background-color: #10b981; color: #000; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; margin-right: 10px;">Approve ✅</a>
-          <a href="http://10.169.241.10:3000/action?threadId=${threadId}&budget=${budget}&feature=${encodeURIComponent(feature)}&approved=false" style="background-color: #ef4444; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Reject ❌</a>
+          <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/action?threadId=${threadId}&budget=${budget}&feature=${encodeURIComponent(feature)}&approved=true" style="background-color: #10b981; color: #000; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; margin-right: 10px;">Approve ✅</a>
+          <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/action?threadId=${threadId}&budget=${budget}&feature=${encodeURIComponent(feature)}&approved=false" style="background-color: #ef4444; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Reject ❌</a>
         </div>
         <div style="text-align: center; margin-top: 20px;">
           <a href="https://notion.so" style="color: #a1a1aa; text-decoration: underline; font-size: 0.9rem;">Review full details in Notion</a>
@@ -62,7 +71,7 @@ export async function sendApprovalEmail(budget: number, feature: string, threadI
       to: process.env.MANAGER_EMAIL || "sharmaaman9318411@gmail.com", 
       subject: "Approval Required – EnterprisePilot AI", 
       text: `Approval Required for ${feature} (Budget: ₹${budget.toLocaleString()}). Please review in Notion.`,
-      html: htmlBody, 
+      html: htmlBody
     });
 
     console.log(`[SYSTEM] 📧 Email actually sent! Message ID: ${info.messageId}`);
@@ -77,5 +86,31 @@ export async function sendApprovalEmail(budget: number, feature: string, threadI
 
   } catch (error) {
     console.error("[EMAIL] Error sending email:", error);
+  }
+}
+export async function sendNotificationEmail(toEmail: string, subject: string, textBody: string) {
+  try {
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      console.log("[EMAIL] SMTP not configured. Skipping notification email to", toEmail);
+      return;
+    }
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
+
+    await transporter.sendMail({
+      from: '"EnterprisePilot AI" <no-reply@enterprisepilot.ai>',
+      to: toEmail,
+      subject: subject,
+      text: textBody,
+    });
+    console.log(`[SYSTEM] 📧 Notification email sent to ${toEmail}`);
+  } catch (error) {
+    console.error("[EMAIL] Error sending notification email:", error);
   }
 }

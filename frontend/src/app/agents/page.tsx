@@ -215,7 +215,7 @@ export default function AgentsPage() {
           </div>
         </div>
         <div className="flex gap-3">
-          <button onClick={handleDeploy} className="px-5 py-2.5 rounded-md bg-[#09222b] border border-[rgba(255,255,255,0.08)] text-xs font-semibold text-white hover:bg-white/5 transition-colors shadow-[0_2px_10px_rgba(255,255,255,0.05)]">
+          <button onClick={handleDeploy} className="px-5 py-2.5 rounded-md bg-[#1c263f] border border-white/5 text-xs font-semibold text-white hover:bg-white/5 transition-colors shadow-[0_2px_10px_rgba(255,255,255,0.05)]">
             Deploy New Agent
           </button>
         </div>
@@ -233,11 +233,11 @@ export default function AgentsPage() {
             className="luxury-card flex flex-col overflow-hidden group"
           >
             {/* Header */}
-            <div className="p-6 border-b border-[rgba(255,255,255,0.05)]">
+            <div className="p-6 border-b border-white/5">
               <div className="flex justify-between items-start mb-6">
                 <div className="flex gap-4 items-center">
                   <div className={cn(
-                    "p-3 rounded-xl border bg-[#021114]",
+                    "p-3 rounded-xl border bg-[#131b2f]",
                     colorMap[agent.color].border,
                     colorMap[agent.color].shadow
                   )}>
@@ -249,7 +249,7 @@ export default function AgentsPage() {
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-2">
-                  <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-[#021114] border border-[rgba(255,255,255,0.05)] text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+                  <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-[#131b2f] border border-white/5 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
                     <Settings2 size={10} />
                     {agent.model}
                   </div>
@@ -265,14 +265,14 @@ export default function AgentsPage() {
 
               <div>
                 <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Current Task</div>
-                <div className="text-xs font-medium text-white bg-[#021114] border border-[rgba(255,255,255,0.05)] rounded-md px-3 py-2.5 truncate shadow-inner">
+                <div className="text-xs font-medium text-white bg-[#131b2f] border border-white/5 rounded-md px-3 py-2.5 truncate shadow-inner">
                   {agent.task}
                 </div>
               </div>
             </div>
 
             {/* Metrics Grid */}
-            <div className="p-6 grid grid-cols-2 gap-5 bg-[#021114] flex-1">
+            <div className="p-6 grid grid-cols-2 gap-5 bg-[#131b2f] flex-1">
               <div>
                 <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Confidence</div>
                 <div className="text-xl font-light tracking-tight text-white flex items-baseline gap-1">
@@ -307,13 +307,13 @@ export default function AgentsPage() {
             </div>
 
             {/* Footer */}
-            <div className="p-6 border-t border-[rgba(255,255,255,0.05)]">
+            <div className="p-6 border-t border-white/5">
               <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Last Decision</div>
               <div className="text-sm text-white font-medium mb-6 h-10 line-clamp-2">
                 "{agent.lastDecision}"
               </div>
               
-              <button onClick={() => handleViewDetails(agent)} className="w-full py-2.5 rounded-md text-xs font-bold transition-all flex items-center justify-center gap-2 bg-[#09222b] border border-[rgba(255,255,255,0.08)] hover:bg-white/5 text-white shadow-[0_2px_10px_rgba(255,255,255,0.05)]">
+              <button onClick={() => handleViewDetails(agent)} className="w-full py-2.5 rounded-md text-xs font-bold transition-all flex items-center justify-center gap-2 bg-[#1c263f] border border-white/5 hover:bg-white/5 text-white shadow-[0_2px_10px_rgba(255,255,255,0.05)]">
                 View Details
               </button>
             </div>
@@ -330,14 +330,14 @@ export default function AgentsPage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className={cn(
-                "w-full max-w-2xl bg-[#021114] border rounded-2xl overflow-hidden shadow-2xl flex flex-col",
+                "w-full max-w-2xl bg-[#131b2f] border rounded-2xl overflow-hidden shadow-2xl flex flex-col",
                 colorMap[selectedAgent.color].border
               )}
             >
-              <div className="p-6 border-b border-[rgba(255,255,255,0.05)] bg-[#021114] flex justify-between items-start">
+              <div className="p-6 border-b border-white/5 bg-[#131b2f] flex justify-between items-start">
                 <div className="flex gap-4 items-center">
                   <div className={cn(
-                    "p-3 rounded-xl border bg-[#09222b]",
+                    "p-3 rounded-xl border bg-[#1c263f]",
                     colorMap[selectedAgent.color].border,
                     colorMap[selectedAgent.color].shadow
                   )}>
@@ -358,7 +358,7 @@ export default function AgentsPage() {
               
               <div className="p-6 overflow-y-auto max-h-[60vh] custom-scrollbar">
                 <h3 className="text-xs font-bold text-white uppercase tracking-widest mb-4">Live Terminal Logs</h3>
-                <div className="bg-[#021114] border border-[rgba(255,255,255,0.05)] rounded-lg p-4 font-mono text-[11px] text-slate-400 leading-relaxed h-48 overflow-y-auto shadow-inner custom-scrollbar">
+                <div className="bg-[#131b2f] border border-white/5 rounded-lg p-4 font-mono text-[11px] text-slate-400 leading-relaxed h-48 overflow-y-auto shadow-inner custom-scrollbar">
                   <div className="text-brand-cyan mb-2">➜ Connecting to {selectedAgent.name} secure channel...</div>
                   <div className="mb-2">✓ Authentication successful.</div>
                   <div className="mb-2">➜ Loading context for task: {selectedAgent.task}</div>
@@ -368,18 +368,18 @@ export default function AgentsPage() {
                 </div>
 
                 <div className="grid grid-cols-3 gap-4 mt-6">
-                  <div className="p-4 rounded-xl bg-[#09222b] border border-[rgba(255,255,255,0.05)]">
+                  <div className="p-4 rounded-xl bg-[#1c263f] border border-white/5">
                     <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status</div>
                     <div className={cn("text-sm font-bold flex items-center gap-1.5", selectedAgent.status === "Active" ? "text-brand-emerald" : "text-yellow-500")}>
                       <div className={cn("w-1.5 h-1.5 rounded-full", selectedAgent.status === "Active" ? "bg-brand-emerald animate-pulse" : "bg-yellow-500")} />
                       {selectedAgent.status}
                     </div>
                   </div>
-                  <div className="p-4 rounded-xl bg-[#09222b] border border-[rgba(255,255,255,0.05)]">
+                  <div className="p-4 rounded-xl bg-[#1c263f] border border-white/5">
                     <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Latency</div>
                     <div className="text-sm font-bold text-white">{selectedAgent.latency}</div>
                   </div>
-                  <div className="p-4 rounded-xl bg-[#09222b] border border-[rgba(255,255,255,0.05)]">
+                  <div className="p-4 rounded-xl bg-[#1c263f] border border-white/5">
                     <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Est. Cost</div>
                     <div className="text-sm font-bold text-white">{selectedAgent.cost}</div>
                   </div>

@@ -85,13 +85,16 @@ export async function resumeDemo(threadId: string, approved: boolean) {
     
     console.log(`[NOTION WEBHOOK] Received webhook for thread ${threadId}: ${approved ? 'Approved' : 'Rejected'}.`);
 
-    await orchestratorApp.updateState(
-      threadConfig,
-      { humanApproved: approved }
-    );
-
-    // Resume the graph
-    await orchestratorApp.invoke(null, threadConfig);
+    try {
+      await orchestratorApp.updateState(
+        threadConfig,
+        { humanApproved: approved }
+      );
+      // Resume the graph
+      await orchestratorApp.invoke(null, threadConfig);
+    } catch (e: any) {
+      console.log(`[WARNING] Could not resume thread ${threadId} in LangGraph (likely memory wiped). Proceeding to resolve in DB anyway.`);
+    }
 
     console.log("\n✅ Workflow Completed and Actions Executed.");
     

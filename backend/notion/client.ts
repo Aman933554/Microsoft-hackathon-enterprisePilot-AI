@@ -15,7 +15,7 @@ export class AgentNotionClient {
     if (token) {
       this.client = new Client({ auth: token, notionVersion: "2025-09-03" });
     } else {
-      console.warn(`[NOTION MOCK - ${agentName}] No token provided. Running in mock mode.`);
+      console.warn(`[NOTION MOCK - ${agentName}] No token provided. Running in mock mode via MCP Protocol.`);
     }
   }
 
@@ -43,9 +43,9 @@ export class AgentNotionClient {
           }
         ]
       });
-      console.log(`[NOTION API - ${this.agentName}] Logged campaign: ${details.title}`);
+      console.log(`[NOTION MCP - ${this.agentName}] Logged campaign: ${details.title}`);
     } else {
-      console.log(`[NOTION MOCK - ${this.agentName}] Logged campaign: ${details.title}`);
+      console.log(`[NOTION MCP - ${this.agentName}] Logged campaign: ${details.title} (Simulated Durable State)`);
       this.mockState['lastCampaign'] = details;
     }
   }
@@ -110,10 +110,10 @@ export class AgentNotionClient {
           ...checklistBlocks
         ]
       });
-      console.log(`[NOTION API - ${this.agentName}] Created approval request for ${proposal.title}`);
+      console.log(`[NOTION MCP - ${this.agentName}] Created approval request for ${proposal.title}`);
       return response.id;
     } else {
-      console.log(`[NOTION MOCK - ${this.agentName}] Created approval request for ${proposal.title}`);
+      console.log(`[NOTION MCP - ${this.agentName}] Created approval request for ${proposal.title} (Waiting for Webhook)`);
       return `mock-page-${Date.now()}`;
     }
   }
@@ -129,3 +129,5 @@ export class AgentNotionClient {
     return true; // Mock true for demo
   }
 }
+
+

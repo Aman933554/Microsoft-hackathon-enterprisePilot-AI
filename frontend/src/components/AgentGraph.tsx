@@ -17,7 +17,9 @@ import {
   Position,
   getSmoothStepPath,
   type EdgeProps,
-  type ReactFlowInstance
+  type ReactFlowInstance,
+  type Node,
+  type Edge
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { cn } from "@/lib/utils";
@@ -37,7 +39,7 @@ const AnimatedEdge = ({
   const [edgePath] = getSmoothStepPath({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, borderRadius: 16 });
   
   const status = data?.status || 'idle';
-  const label = data?.label || '';
+  const label = (data?.label as string) || '';
   const isLive = data?.isLive || false;
 
   let color = 'rgba(255,255,255,0.3)'; // idle
@@ -119,7 +121,7 @@ const AnimatedEdge = ({
             </text>
           )}
           
-          <animateMotion dur={dur} repeatCount="indefinite" keyPoints="0;1" keyTimes="0;1">
+          <animateMotion dur={dur} repeatCount="indefinite" calcMode="linear" keyPoints="0;1" keyTimes="0;1">
             <mpath href={`#${id}`} />
           </animateMotion>
         </g>
@@ -165,7 +167,7 @@ const AgentNode = ({ data, isConnectable }: any) => {
       label: "Processing"
     },
     idle: {
-      color: "border-[rgba(255,255,255,0.05)] shadow-[0_4px_24px_-4px_rgba(0,0,0,0.5)]",
+      color: "border-white/5 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.5)]",
       text: "text-slate-400",
       bg: "bg-white/5",
       label: "Idle"
@@ -189,7 +191,7 @@ const AgentNode = ({ data, isConnectable }: any) => {
       <div className="flex justify-between items-start mb-3">
         <div className="flex items-start gap-3">
           <div className="relative">
-            <div className={cn("p-3 rounded-xl border transition-colors relative z-10 bg-[#021114] flex items-center justify-center", conf.color.split(' ')[0])}>
+            <div className={cn("p-3 rounded-xl border transition-colors relative z-10 bg-[#131b2f] flex items-center justify-center", conf.color.split(' ')[0])}>
               {data.avatar ? (
                 <img src={data.avatar} alt="Avatar" className="w-7 h-7 rounded-full object-cover" />
               ) : (
@@ -212,7 +214,7 @@ const AgentNode = ({ data, isConnectable }: any) => {
         </button>
       </div>
 
-      <div className="mt-5 grid grid-cols-3 gap-y-4 gap-x-2 text-sm border-t border-[rgba(255,255,255,0.05)] pt-4">
+      <div className="mt-5 grid grid-cols-3 gap-y-4 gap-x-2 text-sm border-t border-white/5 pt-4">
          <div className="flex flex-col gap-1 col-span-3">
            <span className="text-slate-400 uppercase tracking-widest text-[9px] font-bold">Current Task</span>
            <span className="text-white font-medium text-[12px] truncate" title={data.task || "Awaiting Assignment"}>{data.task || "Awaiting Assignment"}</span>
@@ -280,7 +282,7 @@ const IntegrationNode = ({ data, isConnectable }: any) => {
     running: { color: "border-brand-cyan shadow-[0_0_15px_rgba(6,182,212,0.2)]", icon: "text-brand-cyan", dot: "bg-brand-cyan animate-pulse" },
     completed: { color: "border-brand-emerald shadow-[0_0_15px_rgba(16,185,129,0.2)]", icon: "text-brand-emerald", dot: "bg-brand-emerald" },
     waiting: { color: "border-yellow-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]", icon: "text-yellow-500", dot: "bg-yellow-500 animate-pulse" },
-    idle: { color: "border-[rgba(255,255,255,0.05)]", icon: "text-slate-400", dot: "bg-white/20" }
+    idle: { color: "border-white/5", icon: "text-slate-400", dot: "bg-white/20" }
   };
   
   const currentStatus = (data.status as keyof typeof statusConfig) || "idle";
@@ -288,13 +290,13 @@ const IntegrationNode = ({ data, isConnectable }: any) => {
 
   return (
     <div className={cn(
-      "luxury-card p-4 transition-all duration-300 w-[280px] relative z-10 group bg-[#021114] hover:-translate-y-0.5",
+      "luxury-card p-4 transition-all duration-300 w-[280px] relative z-10 group bg-[#131b2f] hover:-translate-y-0.5",
       conf.color
     )}>
       <Handle type="target" position={Position.Left} id="left" isConnectable={isConnectable} className="w-2.5 h-2.5 bg-white/20 border-white/40 opacity-0 group-hover:opacity-100 transition-opacity" />
       
       <div className="flex items-center gap-4">
-        <div className={cn("p-2.5 rounded-xl border transition-colors bg-[#09222b] relative overflow-hidden", conf.color.split(' ')[0])}>
+        <div className={cn("p-2.5 rounded-xl border transition-colors bg-[#1c263f] relative overflow-hidden", conf.color.split(' ')[0])}>
           <Icon size={20} className={cn("relative z-10", conf.icon)} />
           <div className={cn("absolute inset-0 opacity-20", currentStatus !== 'idle' ? conf.dot.split(' ')[0] : "")} />
         </div>
@@ -330,32 +332,32 @@ interface AgentGraphProps {
 
 export function AgentGraph({ logs, isRunning, isFullScreen, isLiveMode }: AgentGraphProps) {
   const [activeNode, setActiveNode] = useState<string>("System");
-  const [rfInstance, setRfInstance] = useState<ReactFlowInstance | null>(null);
+  const [rfInstance, setRfInstance] = useState<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
-  const initialNodes = [
-    { id: "System", type: "agentNode", position: { x: 0, y: 300 }, data: { label: "User Goal", icon: Target, status: "idle", duration: "0ms", reasoning: "" } },
-    { id: "PM", type: "agentNode", position: { x: 450, y: 300 }, data: { label: "Product Manager", icon: ClipboardList, status: "idle", duration: "0ms" } },
-    { id: "Engineering", type: "agentNode", position: { x: 900, y: 0 }, data: { label: "Engineering Agent", icon: Cpu, status: "idle", duration: "0ms" } },
-    { id: "Finance", type: "agentNode", position: { x: 900, y: 600 }, data: { label: "Finance Agent", icon: DollarSign, status: "idle", duration: "0ms" } },
-    { id: "QA", type: "agentNode", position: { x: 1350, y: 0 }, data: { label: "QA Agent", icon: Shield, status: "idle", duration: "0ms" } },
-    { id: "Approval", type: "agentNode", position: { x: 1350, y: 600 }, data: { label: "Human Approval", icon: Users, status: "idle", duration: "0ms" } },
-    { id: "DevOps", type: "agentNode", position: { x: 1800, y: 300 }, data: { label: "DevOps", icon: Settings, status: "idle", duration: "0ms" } },
-    { id: "GitHub", type: "integrationNode", position: { x: 2350, y: -20 }, data: { label: "GitHub", icon: GitBranch, status: "idle", duration: "0ms" } },
-    { id: "Notion", type: "integrationNode", position: { x: 2350, y: 140 }, data: { label: "Notion Workspace", icon: FileText, status: "idle", duration: "0ms" } },
-    { id: "Slack", type: "integrationNode", position: { x: 2350, y: 300 }, data: { label: "Slack Channel", icon: MessageSquare, status: "idle", duration: "0ms" } },
-    { id: "Email", type: "integrationNode", position: { x: 2350, y: 460 }, data: { label: "Email", icon: Mail, status: "idle", duration: "0ms" } },
-    { id: "Analytics", type: "integrationNode", position: { x: 2350, y: 620 }, data: { label: "Analytics", icon: BarChart, status: "idle", duration: "0ms" } }
+  const initialNodes: Node[] = [
+    { id: "System", type: "agentNode", position: { x: 0, y: 250 }, data: { label: "User Goal", icon: Target, status: "idle", duration: "0ms", reasoning: "" } },
+    { id: "PM", type: "agentNode", position: { x: 420, y: 250 }, data: { label: "Product Manager", icon: ClipboardList, status: "idle", duration: "0ms" } },
+    { id: "Engineering", type: "agentNode", position: { x: 840, y: 50 }, data: { label: "Engineering Agent", icon: Cpu, status: "idle", duration: "0ms" } },
+    { id: "Finance", type: "agentNode", position: { x: 840, y: 450 }, data: { label: "Finance Agent", icon: DollarSign, status: "idle", duration: "0ms" } },
+    { id: "QA", type: "agentNode", position: { x: 1260, y: 50 }, data: { label: "QA Agent", icon: Shield, status: "idle", duration: "0ms" } },
+    { id: "Approval", type: "agentNode", position: { x: 1260, y: 450 }, data: { label: "Human Approval", icon: Users, status: "idle", duration: "0ms" } },
+    { id: "DevOps", type: "agentNode", position: { x: 1680, y: 250 }, data: { label: "DevOps", icon: Settings, status: "idle", duration: "0ms" } },
+    { id: "GitHub", type: "integrationNode", position: { x: 2120, y: 50 }, data: { label: "GitHub", icon: GitBranch, status: "idle", duration: "0ms" } },
+    { id: "Notion", type: "integrationNode", position: { x: 2120, y: 150 }, data: { label: "Notion Workspace", icon: FileText, status: "idle", duration: "0ms" } },
+    { id: "Slack", type: "integrationNode", position: { x: 2120, y: 250 }, data: { label: "Slack Channel", icon: MessageSquare, status: "idle", duration: "0ms" } },
+    { id: "Email", type: "integrationNode", position: { x: 2120, y: 350 }, data: { label: "Email", icon: Mail, status: "idle", duration: "0ms" } },
+    { id: "Analytics", type: "integrationNode", position: { x: 2120, y: 450 }, data: { label: "Analytics", icon: BarChart, status: "idle", duration: "0ms" } }
   ];
 
-  const initialEdges = [
+  const initialEdges: Edge[] = [
     { id: "e-sys-pm", source: "System", target: "PM", sourceHandle: "right", targetHandle: "left", type: "animatedEdge", data: { status: 'idle', label: '', isLive: true } },
     { id: "e-pm-eng", source: "PM", target: "Engineering", sourceHandle: "right", targetHandle: "left", type: "animatedEdge", data: { status: 'idle', label: '', isLive: true } },
     { id: "e-pm-fin", source: "PM", target: "Finance", sourceHandle: "right", targetHandle: "left", type: "animatedEdge", data: { status: 'idle', label: '', isLive: true } },
     { id: "e-eng-qa", source: "Engineering", target: "QA", sourceHandle: "right", targetHandle: "left", type: "animatedEdge", data: { status: 'idle', label: '', isLive: true } },
     { id: "e-fin-app", source: "Finance", target: "Approval", sourceHandle: "right", targetHandle: "left", type: "animatedEdge", data: { status: 'idle', label: '', isLive: true } },
-    { id: "e-qa-dev", source: "QA", target: "DevOps", sourceHandle: "right", targetHandle: "top", type: "animatedEdge", data: { status: 'idle', label: '', isLive: true } },
-    { id: "e-app-dev", source: "Approval", target: "DevOps", sourceHandle: "right", targetHandle: "bottom", type: "animatedEdge", data: { status: 'idle', label: '', isLive: true } },
+    { id: "e-qa-dev", source: "QA", target: "DevOps", sourceHandle: "right", targetHandle: "left", type: "animatedEdge", data: { status: 'idle', label: '', isLive: true } },
+    { id: "e-app-dev", source: "Approval", target: "DevOps", sourceHandle: "right", targetHandle: "left", type: "animatedEdge", data: { status: 'idle', label: '', isLive: true } },
     
     // Integrations
     { id: "e-dev-git", source: "DevOps", target: "GitHub", sourceHandle: "right", targetHandle: "left", type: "animatedEdge", data: { status: 'idle', label: '', isLive: true } },
@@ -569,7 +571,7 @@ export function AgentGraph({ logs, isRunning, isFullScreen, isLiveMode }: AgentG
   }, [logs]);
 
   return (
-    <div ref={containerRef} className="w-full h-full rounded-[20px] overflow-hidden bg-[#021114] relative border border-[rgba(255,255,255,0.05)]">
+    <div ref={containerRef} className="w-full h-full rounded-[20px] overflow-hidden bg-[#131b2f] relative border border-white/5">
       <ReactFlow
         onInit={setRfInstance}
         nodes={nodes}
@@ -580,12 +582,12 @@ export function AgentGraph({ logs, isRunning, isFullScreen, isLiveMode }: AgentG
         edgeTypes={edgeTypes}
         fitView
         onlyRenderVisibleElements
-        fitViewOptions={{ padding: 0.05, minZoom: 0.45, maxZoom: 2 }}
+        fitViewOptions={{ padding: 0.2, minZoom: 0.1, maxZoom: 2 }}
         zoomOnScroll={false}
         zoomOnDoubleClick={false}
         zoomOnPinch={false}
         panOnScroll={false}
-        preventScrolling={!isFullScreen ? false : true}
+        preventScrolling={false}
         panOnDrag={false}
         selectionOnDrag={false}
         nodesDraggable={false}
@@ -593,7 +595,7 @@ export function AgentGraph({ logs, isRunning, isFullScreen, isLiveMode }: AgentG
         elementsSelectable={false}
         snapToGrid={true}
         snapGrid={[20, 20]}
-        className="bg-[#021114]"
+        className="bg-[#131b2f]"
       >
         <Background color="rgba(255,255,255,0.06)" gap={24} size={1} />
       </ReactFlow>
