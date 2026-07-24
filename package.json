@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "cd frontend && npx next dev",
-    "build": "npx prisma generate && npx prisma db push --accept-data-loss && cd frontend && NODE_OPTIONS=\"--max_old_space_size=800\" npx next build",
+    "build": "npx prisma generate && npx prisma db push --accept-data-loss && cd frontend && npx next build --webpack",
     "start": "cd frontend && npx next start",
     "lint": "echo 'Skipping lint'",
     "cli": "cd backend && npx tsx index.ts"
