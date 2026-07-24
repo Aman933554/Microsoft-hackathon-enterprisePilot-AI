@@ -1,4 +1,3 @@
-import "dotenv/config";
 import { orchestratorApp } from "./orchestrator/graph";
 import { prisma } from "../frontend/src/lib/prisma";
 

@@ -2,6 +2,6 @@
   "name": "frontend",
   "private": true,
   "devDependencies": {
-    "typescript": "*"
+    "typescript": "7.0.2"
   }
 }

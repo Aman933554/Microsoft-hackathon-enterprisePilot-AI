@@ -1,5 +1,4 @@
 import nodemailer from 'nodemailer';
-import "dotenv/config";
 
 export async function sendApprovalEmail(budget: number, feature: string, threadId: string) {
   try {
