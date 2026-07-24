@@ -3,7 +3,7 @@ import { runDemo } from '../../../../../backend/run-graph';
 import { evaluateBudget } from '../../../../../backend/ai/budgetEvaluator';
 
 export const maxDuration = 300; // Allow Vercel/Next to run this for up to 5 mins
-
+export const dynamic = 'force-dynamic';
 export async function POST(req: Request) {
   try {
     const { goal, maxBudget } = await req.json();

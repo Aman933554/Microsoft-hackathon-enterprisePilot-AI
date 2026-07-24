@@ -3,7 +3,7 @@ import { resumeDemo } from '../../../../../backend/run-graph';
 import { currentUser } from '@clerk/nextjs/server';
 
 export const maxDuration = 300;
-
+export const dynamic = 'force-dynamic';
 export async function POST(req: Request) {
   try {
     const { threadId, approved, email } = await req.json();
