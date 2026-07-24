@@ -1,6 +1,7 @@
 import React from "react";
 import { ShieldAlert, Terminal, Lock, Database } from "lucide-react";
 import { prisma } from "../../lib/prisma";
+import { formatDistanceToNow } from "date-fns";
 
 // Add this to prevent static generation issues during build
 export const dynamic = 'force-dynamic';
