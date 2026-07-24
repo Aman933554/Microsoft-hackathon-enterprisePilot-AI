@@ -6,7 +6,6 @@ const nextConfig = {
     workerThreads: false,
     cpus: 1,
   },
-  allowedDevOrigins: ['10.169.241.10'],
   typescript: {
     ignoreBuildErrors: true,
   },
