@@ -44,7 +44,11 @@ function ActionContent() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ threadId, approved }),
+          body: JSON.stringify({ 
+            threadId, 
+            approved, 
+            email: process.env.NEXT_PUBLIC_MANAGER_EMAIL 
+          }),
         });
 
         if (res.ok) {

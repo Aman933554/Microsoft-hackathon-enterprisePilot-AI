@@ -4,17 +4,20 @@ import React from "react";
 import { motion } from "framer-motion";
 import { 
   LayoutDashboard, Users, GitBranch, CheckSquare, Folder, BookOpen, 
-  FileText, Puzzle, BarChart2, ShieldAlert, Settings, Cpu
+  FileText, Puzzle, BarChart2, ShieldAlert, Settings, Cpu, Home
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { UserButton, useUser } from "@clerk/nextjs";
 
 export function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean, setIsOpen?: (val: boolean) => void }) {
   const pathname = usePathname();
+  const { user } = useUser();
 
   const platformItems = [
-    { icon: LayoutDashboard, label: "Dashboard", href: "/" },
+    { icon: Home, label: "Main Website", href: "/" },
+    { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
     { icon: Users, label: "AI Agents", href: "/agents" },
     { icon: GitBranch, label: "Workflow Studio", href: "/workflows" },
     { icon: CheckSquare, label: "Approvals", href: "/approvals" },
@@ -45,7 +48,7 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean, setIsOpen?: (
       className="fixed top-0 left-0 w-[260px] h-screen bg-[#0b1120] border-r border-white/5 flex flex-col z-50 overflow-y-auto custom-scrollbar"
     >
       {/* Header */}
-      <div className="flex items-center gap-3 p-5 mt-2">
+      <Link href="/" className="flex items-center gap-3 p-5 mt-2 hover:bg-white/5 transition-colors cursor-pointer">
         <div className="w-10 h-10 rounded-xl bg-[#1e293b]/50 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0">
           <Cpu size={20} />
         </div>
@@ -55,7 +58,7 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean, setIsOpen?: (
             AI-Native Enterprise<br/>Operating System
           </span>
         </div>
-      </div>
+      </Link>
 
       <div className="flex flex-col flex-1 px-3 mt-4 gap-6 pb-20">
         
@@ -120,17 +123,16 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean, setIsOpen?: (
       <div className="fixed bottom-0 left-0 w-[260px] p-4 bg-[#0b1120] border-t border-white/5 z-20">
         <div className="flex items-center justify-between p-2 hover:bg-white/5 rounded-xl transition-colors cursor-pointer group">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-black border border-white/10 flex items-center justify-center">
-              <span className="text-white font-bold text-lg">N</span>
-            </div>
+            <UserButton afterSignOutUrl="/" />
             <div className="flex flex-col">
-              <span className="text-[14px] font-bold text-white">John Doe</span>
+              <span className="text-[14px] font-bold text-white">
+                {user?.fullName || "Guest User"}
+              </span>
               <span className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1.5">
                 Online
               </span>
             </div>
           </div>
-          <Settings size={16} className="text-slate-400 group-hover:text-slate-300" />
         </div>
       </div>
     </motion.aside>

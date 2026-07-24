@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const pathname = usePathname();
 
   useEffect(() => {
     const handleResize = () => {
@@ -22,6 +24,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  const isFullScreen = pathname === '/' || pathname === '/login';
+
+  if (isFullScreen) {
+    return <div className="flex-1 w-full min-h-screen bg-background">{children}</div>;
+  }
 
   return (
     <>

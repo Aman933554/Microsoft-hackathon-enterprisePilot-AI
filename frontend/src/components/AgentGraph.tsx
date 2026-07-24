@@ -155,7 +155,7 @@ const AgentNode = ({ data, isConnectable }: any) => {
       label: "Completed"
     },
     waiting: {
-      color: "border-yellow-500 shadow-[0_0_15px_rgba(245,158,11,0.15)] animate-pulse",
+      color: "border-yellow-500 shadow-[0_0_15px_rgba(245,158,11,0.15)]",
       text: "text-yellow-500",
       bg: "bg-yellow-500/10",
       label: "Approval Required"
@@ -178,11 +178,19 @@ const AgentNode = ({ data, isConnectable }: any) => {
   const conf = statusConfig[currentStatus] || statusConfig["idle"];
 
   return (
-    <div className={cn(
-      "luxury-card p-[24px] transition-all duration-300 w-[360px] min-h-[140px] relative z-10 group gradient-border hover:-translate-y-1",
-      conf.color,
-      currentStatus !== 'idle' ? "shadow-[0_0_30px_rgba(6,182,212,0.15)]" : ""
-    )}>
+    <motion.div 
+      className={cn(
+        "luxury-card p-[24px] transition-all duration-300 w-[360px] min-h-[140px] relative z-10 group gradient-border hover:-translate-y-1",
+        conf.color,
+        currentStatus !== 'idle' && currentStatus !== 'waiting' ? "shadow-[0_0_30px_rgba(6,182,212,0.15)]" : ""
+      )}
+      animate={currentStatus === 'waiting' ? { 
+        opacity: [1, 0.6, 1],
+        scale: [1, 1.01, 1],
+        boxShadow: ["0px 0px 10px rgba(234, 179, 8, 0.2)", "0px 0px 30px rgba(234, 179, 8, 0.6)", "0px 0px 10px rgba(234, 179, 8, 0.2)"]
+      } : {}}
+      transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+    >
       <Handle type="target" position={Position.Top} id="top" isConnectable={isConnectable} className="w-2.5 h-2.5 bg-white/20 border-white/40 opacity-0 group-hover:opacity-100 transition-opacity" />
       <Handle type="source" position={Position.Bottom} id="bottom" isConnectable={isConnectable} className="w-2.5 h-2.5 bg-white/20 border-white/40 opacity-0 group-hover:opacity-100 transition-opacity" />
       <Handle type="target" position={Position.Left} id="left" isConnectable={isConnectable} className="w-2.5 h-2.5 bg-white/20 border-white/40 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -270,7 +278,7 @@ const AgentNode = ({ data, isConnectable }: any) => {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </motion.div>
   );
 };
 
@@ -328,9 +336,10 @@ interface AgentGraphProps {
   isRunning: boolean;
   isFullScreen: boolean;
   isLiveMode: boolean;
+  isPaused?: boolean;
 }
 
-export function AgentGraph({ logs, isRunning, isFullScreen, isLiveMode }: AgentGraphProps) {
+export function AgentGraph({ logs, isRunning, isFullScreen, isLiveMode, isPaused }: AgentGraphProps) {
   const [activeNode, setActiveNode] = useState<string>("System");
   const [rfInstance, setRfInstance] = useState<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -492,6 +501,15 @@ export function AgentGraph({ logs, isRunning, isFullScreen, isLiveMode }: AgentG
       else if (latestLog.includes("[EMAIL]")) current = "Email";
       else if (latestLog.includes("[ANALYTICS]")) current = "Analytics";
       nodeStatus = "completed";
+    }
+    else if (latestLog.includes("Workflow Completed")) {
+      current = "Analytics"; // Set to the last node
+      nodeStatus = "completed";
+    }
+
+    if (isPaused) {
+      current = "Approval";
+      nodeStatus = "waiting";
     }
 
     setActiveNode(current);

@@ -3,8 +3,11 @@
 import React, { useState, useEffect } from "react";
 import { CheckSquare, ShieldAlert, DollarSign, Clock, CheckCircle, XCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-
+import { useUser } from "@clerk/nextjs";
 export default function ApprovalsPage() {
+  const { user, isLoaded: isUserLoaded } = useUser();
+  const userEmail = user?.primaryEmailAddress?.emailAddress;
+  const isManager = userEmail === process.env.NEXT_PUBLIC_MANAGER_EMAIL || userEmail === "sharmaaman9318411@gmail.com";
   const [approvals, setApprovals] = useState<any[]>([]);
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,7 +41,7 @@ export default function ApprovalsPage() {
       const res = await fetch("/api/resume-agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ threadId, approved })
+        body: JSON.stringify({ threadId, approved, email: userEmail })
       });
       if (res.ok) {
         // Remove from list
@@ -50,6 +53,14 @@ export default function ApprovalsPage() {
       setProcessing(null);
     }
   };
+
+  if (!isUserLoaded) {
+    return (
+      <div className="h-[calc(100vh-6rem)] flex items-center justify-center text-slate-400">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="animate-in fade-in duration-500 pb-10 h-[calc(100vh-6rem)] flex flex-col p-8 overflow-y-auto custom-scrollbar">
@@ -129,16 +140,24 @@ export default function ApprovalsPage() {
 
                 <div className="flex gap-4 justify-end">
                   <button 
-                    disabled={processing === approval.id}
+                    disabled={!isManager || processing === approval.id}
                     onClick={() => handleAction(approval.id, false)}
-                    className="px-6 py-2 rounded-xl text-sm font-bold bg-white/5 text-white hover:bg-red-500/20 hover:text-red-400 transition-colors border border-white/10 flex items-center gap-2"
+                    className={`px-6 py-2 rounded-xl text-sm font-bold flex items-center gap-2 border transition-colors ${
+                      isManager 
+                        ? 'bg-white/5 text-white hover:bg-red-500/20 hover:text-red-400 border-white/10' 
+                        : 'bg-white/5 text-slate-600 border-white/5 cursor-not-allowed'
+                    }`}
                   >
                     <XCircle size={16} /> {processing === approval.id ? "Processing..." : "Reject"}
                   </button>
                   <button 
-                    disabled={processing === approval.id}
+                    disabled={!isManager || processing === approval.id}
                     onClick={() => handleAction(approval.id, true)}
-                    className="px-6 py-2 rounded-xl text-sm font-bold bg-primary text-black hover:bg-primary/90 transition-colors shadow-[0_0_15px_rgba(6,182,212,0.4)] flex items-center gap-2"
+                    className={`px-6 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors ${
+                      isManager 
+                        ? 'bg-primary text-black hover:bg-primary/90 shadow-[0_0_15px_rgba(6,182,212,0.4)]' 
+                        : 'bg-primary/20 text-black/50 cursor-not-allowed'
+                    }`}
                   >
                     <CheckCircle size={16} /> {processing === approval.id ? "Authorizing..." : "Authorize Execution"}
                   </button>
