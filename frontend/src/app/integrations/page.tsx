@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Link2, CheckCircle, AlertCircle, GitBranch, MessageSquare, Database, CreditCard, Cloud, Triangle, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
+import { cn } from "../../lib/utils";
 
 const initialIntegrations = [
   {

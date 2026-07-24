@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { FileText, RefreshCw, ExternalLink, Check, Database, Shield, Lock, Unlock, Eye, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import { cn } from '../../lib/utils';
 
 interface NotionDB {
   id: string;

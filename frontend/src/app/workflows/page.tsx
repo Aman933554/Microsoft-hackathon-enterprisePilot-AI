@@ -2,9 +2,9 @@
 
 import React, { useState } from "react";
 import { Workflow, Plus, Play, Pause, FileEdit, Brain, DollarSign, MessageSquare, Database, Mail, Users, Filter, Search } from "lucide-react";
-import { AgentGraph } from "@/components/AgentGraph";
+import { AgentGraph } from "../../components/AgentGraph";
 import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
+import { cn } from "../../lib/utils";
 
 export default function WorkflowsPage() {
   const [activeTab, setActiveTab] = useState("Enterprise Architecture Pipeline");

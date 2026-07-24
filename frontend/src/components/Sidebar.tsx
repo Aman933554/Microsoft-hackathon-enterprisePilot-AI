@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
+import { cn } from "../lib/utils";
 import { UserButton, useUser } from "@clerk/nextjs";
 
 export function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean, setIsOpen?: (val: boolean) => void }) {

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
 import "./globals.css";
-import { AppLayout } from "@/components/AppLayout";
+import { AppLayout } from "../components/AppLayout";
 import { ClerkProvider } from "@clerk/nextjs";
 
 export const metadata: Metadata = {

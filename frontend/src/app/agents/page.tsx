@@ -7,7 +7,7 @@ import {
   Cpu, Gavel, HandHeart, Code, LineChart, X
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
+import { cn } from "../../lib/utils";
 
 const initialAgents = [
   {
