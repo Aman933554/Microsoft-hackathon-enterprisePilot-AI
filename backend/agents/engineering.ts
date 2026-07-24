@@ -41,43 +41,48 @@ export class EngineeringAgent {
 
     const structuredLlm = this.llm.withStructuredOutput(proposalSchema);
     
-    const response = await structuredLlm.invoke([
-      new SystemMessage(`You are the Lead Enterprise Architect. 
-      Generate a detailed, realistic engineering proposal, architecture recommendation, and budget estimate based on the user's goal.
-      
-      BUDGET & QUALITY RANGES:
-      - Website Development (Standard: ₹50,000 | Range: ₹20,000 - ₹1,00,000)
-      - Cloud Migration (Standard: ₹2,00,000 | Range: ₹50,000 - ₹5,00,000)
-      - Mobile App (Standard: ₹1,20,000 | Range: ₹80,000 - ₹3,00,000)
-      - Bug Fixing (Standard: ₹15,000 | Range: ₹5,000 - ₹30,000)
-      
-      RULES FOR ARCHITECTURAL PROPOSALS BASED ON USER BUDGET (₹${userBudget}):
-      
-      1. Website Development:
-         - Low Budget (<= ₹30k): "Given the tight budget of ₹${userBudget}, we will build a basic Shopify/WordPress based E-commerce site with standard templates."
-         - High Budget (>= ₹70k): "With a healthy budget of ₹${userBudget}, we will build a custom Next.js E-commerce platform with a dedicated Stripe integration, Vercel hosting, and advanced edge caching."
-         
-      2. Cloud Migration:
-         - Low Budget (<= ₹1 Lakh): "Due to budget constraints, we will perform a 'Lift and Shift' migration to basic AWS EC2 instances with minimal refactoring."
-         - High Budget (>= ₹3 Lakhs): "We will execute a fully Cloud-Native migration to AWS Elastic Kubernetes Service (EKS) with Serverless Aurora DBs and automated CI/CD pipelines."
-         
-      3. Mobile App:
-         - Low Budget (<= ₹1 Lakh): "We will build a hybrid MVP App using Flutter/React Native with Firebase as the backend to minimize costs."
-         - High Budget (>= ₹2 Lakhs): "We will build high-performance Native iOS (Swift) and Android (Kotlin) apps backed by a scalable Node.js microservices architecture."
-         
-      4. Bug Fixing:
-         - Low Budget (<= ₹10k): "We will apply immediate hotfixes and patches to the critical bugs to restore basic stability."
-         - High Budget (>= ₹20k): "We will implement a comprehensive QA automation suite, set up Sentry for advanced error tracking, and permanently resolve the root causes of system failures."
+    try {
+      const response = await structuredLlm.invoke([
+        new SystemMessage(`You are the Lead Enterprise Architect. 
+        Generate a detailed, realistic engineering proposal, architecture recommendation, and budget estimate based on the user's goal.
+        
+        BUDGET & QUALITY RANGES:
+        - Website Development (Standard: ₹50,000 | Range: ₹20,000 - ₹1,00,000)
+        - Cloud Migration (Standard: ₹2,00,000 | Range: ₹50,000 - ₹5,00,000)
+        - Mobile App (Standard: ₹1,20,000 | Range: ₹80,000 - ₹3,00,000)
+        - Bug Fixing (Standard: ₹15,000 | Range: ₹5,000 - ₹30,000)
+        
+        RULES FOR ARCHITECTURAL PROPOSALS BASED ON USER BUDGET (₹${userBudget}):
+        
+        1. Website Development:
+           - Low Budget (<= ₹30k): "Given the tight budget of ₹${userBudget}, we will build a basic Shopify/WordPress based E-commerce site with standard templates."
+           - High Budget (>= ₹70k): "With a healthy budget of ₹${userBudget}, we will build a custom Next.js E-commerce platform with a dedicated Stripe integration, Vercel hosting, and advanced edge caching."
+           
+        2. Cloud Migration:
+           - Low Budget (<= ₹1 Lakh): "Due to budget constraints, we will perform a 'Lift and Shift' migration to basic AWS EC2 instances with minimal refactoring."
+           - High Budget (>= ₹3 Lakhs): "We will execute a fully Cloud-Native migration to AWS Elastic Kubernetes Service (EKS) with Serverless Aurora DBs and automated CI/CD pipelines."
+           
+        3. Mobile App:
+           - Low Budget (<= ₹1 Lakh): "We will build a hybrid MVP App using Flutter/React Native with Firebase as the backend to minimize costs."
+           - High Budget (>= ₹2 Lakhs): "We will build high-performance Native iOS (Swift) and Android (Kotlin) apps backed by a scalable Node.js microservices architecture."
+           
+        4. Bug Fixing:
+           - Low Budget (<= ₹10k): "We will apply immediate hotfixes and patches to the critical bugs to restore basic stability."
+           - High Budget (>= ₹20k): "We will implement a comprehensive QA automation suite, set up Sentry for advanced error tracking, and permanently resolve the root causes of system failures."
 
-      GENERAL RULE:
-      Your final budget estimate MUST NOT exceed the user's proposed budget (₹${userBudget}), unless it's impossible to build. Mold the description and requirements precisely according to the examples above based on how much the user is willing to spend.
-      `),
-      new HumanMessage(goal)
-    ]);
+        GENERAL RULE:
+        Your final budget estimate MUST NOT exceed the user's proposed budget (₹${userBudget}), unless it's impossible to build. Mold the description and requirements precisely according to the examples above based on how much the user is willing to spend.
+        `),
+        new HumanMessage(goal)
+      ]);
 
-    console.log(`[ENGINEERING AGENT] Proposed architecture with budget: ₹${response.budget}`);
-    console.log(`[ENGINEERING AGENT] Confidence Score: ${response.analysis.confidenceScore}%`);
-    return response;
+      console.log(`[ENGINEERING AGENT] Proposed architecture with budget: ₹${response.budget}`);
+      console.log(`[ENGINEERING AGENT] Confidence Score: ${response.analysis.confidenceScore}%`);
+      return response;
+    } catch (error: any) {
+      console.warn(`[ENGINEERING AGENT] OpenAI API Error: ${error.message}. Falling back to mock proposal.`);
+      return this.getFallbackProposal(goal, userBudget);
+    }
   }
 
   async reviseBudget(proposal: any, feedback: string) {

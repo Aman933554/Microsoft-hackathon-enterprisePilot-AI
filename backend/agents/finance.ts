@@ -81,17 +81,50 @@ export class FinanceAgent {
     2. If the user's max budget is completely unreasonable for the product type (e.g. asking for a Mobile App for ₹10,000, which is below the ₹80k minimum), REJECT IT with feedback stating the budget is too low for this product category.
     3. If everything is within reasonable limits and <= maxBudget, APPROVE it.`;
 
-    const response = await structuredLlm.invoke([
-      new SystemMessage(systemPrompt),
-      new HumanMessage(`Engineering requested: ₹${budget}\nProposal Details: ${JSON.stringify(proposalDetails)}`)
-    ]);
+    try {
+      const response = await structuredLlm.invoke([
+        new SystemMessage(systemPrompt),
+        new HumanMessage(`Engineering requested: ₹${budget}\nProposal Details: ${JSON.stringify(proposalDetails)}`)
+      ]);
+  
+      if (response.approved) {
+        console.log(`[FINANCE AGENT] Budget of ₹${budget} is within policy. Approved.`);
+      } else {
+        console.log(`[FINANCE AGENT] Rejected: ${response.feedback}`);
+      }
+  
+      return response;
+    } catch (error: any) {
+      console.warn(`[FINANCE AGENT] OpenAI API Error: ${error.message}. Falling back to mock mock.`);
+      let isApproved = budget <= maxBudget;
+      let feedback = `Budget of ₹${budget} exceeds our policy limit of ₹${maxBudget}. Please reduce the budget. Recommend exploring spot instances.`;
+      
+      // Dynamic Mock check based on feature type
+      if (goal.includes("Mobile App") && maxBudget < 80000) {
+        isApproved = false;
+        feedback = `The budget of ₹${maxBudget} is too low for Mobile App Development. Minimum required is ₹80,000.`;
+      } else if (goal.includes("Cloud Migration") && maxBudget < 50000) {
+        isApproved = false;
+        feedback = `The budget of ₹${maxBudget} is too low for Cloud Migration. Minimum required is ₹50,000.`;
+      } else if (goal.includes("Website") && maxBudget < 20000) {
+        isApproved = false;
+        feedback = `The budget of ₹${maxBudget} is too low for Website Development. Minimum required is ₹20,000.`;
+      }
 
-    if (response.approved) {
-      console.log(`[FINANCE AGENT] Budget of ₹${budget} is within policy. Approved.`);
-    } else {
-      console.log(`[FINANCE AGENT] Rejected: ${response.feedback}`);
+      const analysis = {
+        roiCalculation: "2.4x over 12 months (Estimated)",
+        policyValidation: isApproved ? "Passes standard tech infrastructure limits." : "Fails minimum budget policy limits.",
+        negotiationHistory: isApproved ? [] : [{ agent: "Finance", message: feedback }],
+        alternativeBudgetSuggestions: isApproved ? [] : [{ suggestion: maxBudget < 20000 ? 50000 : maxBudget, rationale: "Required to maintain standard quality." }]
+      };
+      
+      if (isApproved) {
+        console.log(`[FINANCE AGENT] Budget of ₹${budget} is within policy (<= ₹${maxBudget}). Approved.`);
+        return { approved: true, analysis };
+      } else {
+        console.log(`[FINANCE AGENT] Rejected: ${feedback}`);
+        return { approved: false, feedback, analysis };
+      }
     }
-
-    return response;
   }
 }
