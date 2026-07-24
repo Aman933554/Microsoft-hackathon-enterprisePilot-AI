@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "cd frontend && npx next dev",
-    "build": "npx prisma generate && npx prisma db push --accept-data-loss && cd frontend && npm install typescript@5.5.3 @types/react @types/node --no-save && NEXT_DEBUG=true NEXT_TELEMETRY_DISABLED=1 npx next build",
+    "build": "npx prisma generate && npx prisma db push --accept-data-loss && cd frontend && npm install typescript@5.5.3 @types/react @types/node --no-save && npx next build --debug",
     "start": "cd frontend && npx next start",
     "lint": "echo 'Skipping lint'",
     "cli": "cd backend && npx tsx index.ts"
