@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { runDemo } from '@backend/run-graph';
-import { evaluateBudget } from '@backend/ai/budgetEvaluator';
+import { runDemo } from '../../../../../backend/run-graph';
+import { evaluateBudget } from '../../../../../backend/ai/budgetEvaluator';
 
 export const maxDuration = 300; // Allow Vercel/Next to run this for up to 5 mins
 

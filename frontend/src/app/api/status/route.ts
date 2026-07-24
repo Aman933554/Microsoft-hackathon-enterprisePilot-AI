@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { threadStatuses } from '@backend/run-graph';
+import { threadStatuses } from '../../../../../backend/run-graph';
 
 export const dynamic = 'force-dynamic';
 

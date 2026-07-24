@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { resumeDemo } from '@backend/run-graph';
+import { resumeDemo } from '../../../../../backend/run-graph';
 import { currentUser } from '@clerk/nextjs/server';
 
 export const maxDuration = 300;
