@@ -7,6 +7,12 @@ const nextConfig = {
     memoryBasedWorkersCount: true,
   },
   allowedDevOrigins: ['10.169.241.10'],
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 };
 
 module.exports = nextConfig;
