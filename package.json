@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "cd frontend && npx next dev",
-    "build": "cd frontend && npx next build",
+    "build": "npx prisma generate && cd frontend && npx next build",
     "start": "cd frontend && npx next start",
     "lint": "echo 'Skipping lint'",
     "cli": "cd backend && npx tsx index.ts"
