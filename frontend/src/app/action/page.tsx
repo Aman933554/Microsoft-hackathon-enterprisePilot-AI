@@ -11,10 +11,12 @@ function ActionContent() {
   const approved = searchParams.get("approved") === "true";
   const budgetStr = searchParams.get("budget");
   const feature = searchParams.get("feature") || "AI Expense Predictor";
+  const statusParam = searchParams.get("status");
   
   const currentBudget = budgetStr ? parseInt(budgetStr) : 38400;
 
-  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
+  const initialStatus = statusParam === "success" ? "success" : "loading";
+  const [status, setStatus] = useState<"loading" | "success" | "error">(initialStatus);
   const [errorMessage, setErrorMessage] = useState("");
   const [timeRemaining, setTimeRemaining] = useState(1790);
 
@@ -37,41 +39,24 @@ function ActionContent() {
       return;
     }
 
-    const processAction = async () => {
-      try {
-        const res = await fetch("/api/resume-agent", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ 
-            threadId, 
-            approved, 
-            email: process.env.NEXT_PUBLIC_MANAGER_EMAIL 
-          }),
-        });
+    const statusParam = searchParams.get("status");
 
-        if (res.ok) {
-          setStatus("success");
-        } else {
-          const data = await res.json();
-          setStatus("error");
-          setErrorMessage(data.error || "Failed to process action.");
-        }
-      } catch (err: any) {
-        setStatus("error");
-        setErrorMessage(err.message);
-      }
+    if (statusParam === "success") {
+      setStatus("success");
+      return;
+    }
+
+    const processAction = () => {
+      console.log("Navigating directly to API route to bypass mobile fetch issues...");
+      window.location.href = `/api/resume-agent?threadId=${encodeURIComponent(threadId)}&approved=${approved}`;
     };
-
-    // Small delay for dramatic effect
-    setTimeout(processAction, 1500);
-  }, [threadId, approved]);
+    
+    // Execute immediately without delay
+    processAction();
+  }, [threadId, approved, searchParams]);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
+    <div
       style={{
         background: "rgba(10, 10, 10, 0.95)",
         border: "1px solid rgba(234, 179, 8, 0.4)",
@@ -86,23 +71,21 @@ function ActionContent() {
       }}
     >
       <div style={{ textAlign: "center", borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: "1.5rem" }}>
-        <motion.div 
-          animate={{ rotate: [0, 10, -10, 0] }} 
-          transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-          style={{ display: "inline-block", marginBottom: "1rem" }}
+        <div 
+          style={{ display: "inline-block", marginBottom: "1rem", animation: "pulse 2s infinite" }}
         >
           <AlertCircle size={48} color="#eab308" style={{ filter: "drop-shadow(0 0 12px rgba(234, 179, 8, 0.4))" }} />
-        </motion.div>
+        </div>
         <h3 style={{ margin: 0, color: "#eab308", fontSize: "1.5rem", letterSpacing: "-0.5px" }}>Approval Authorized</h3>
         <p style={{ margin: 0, color: "var(--text-secondary)", marginTop: "0.5rem" }}>Reviewing remote workflow authorization via Email.</p>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
         <div style={{ padding: "1rem", display: "flex", flexDirection: "column", gap: "0.5rem", background: "rgba(255,255,255,0.03)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.02)" }}>
           <h5 style={{ margin: 0, color: "var(--text-muted)", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "1px" }}>Request Details</h5>
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: "0.5rem" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", marginTop: "0.5rem" }}>
             <span style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>Feature</span>
-            <span style={{ color: "white", fontSize: "0.9rem", textAlign: "right" }}>{feature}</span>
+            <span style={{ color: "white", fontSize: "0.9rem", textAlign: "right", wordBreak: "break-word" }}>{feature}</span>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>Requested By</span>
@@ -134,8 +117,8 @@ function ActionContent() {
 
       <div style={{ padding: "1rem", background: "rgba(0,0,0,0.3)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.02)" }}>
          <h5 style={{ margin: "0 0 1rem 0", color: "var(--text-muted)", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "1px" }}>Notification Escalation</h5>
-         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-           <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
+           <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", flex: "1 1 auto" }}>
              <span style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", color: "white" }}>
                📧 Email Sent <CheckCircle size={14} color="var(--accent-emerald)" />
              </span>
@@ -163,6 +146,25 @@ function ActionContent() {
           <>
             <Loader2 className="animate-spin" size={32} color="var(--accent-cyan)" />
             <span style={{ color: "white", fontWeight: 600 }}>Executing your decision remotely...</span>
+            <div style={{ marginTop: "1rem", textAlign: "center" }}>
+              <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", marginBottom: "0.5rem" }}>
+                If this page doesn't redirect automatically, please click below:
+              </p>
+              <a 
+                href={`/api/resume-agent?threadId=${encodeURIComponent(threadId || "")}&approved=${approved}`}
+                style={{
+                  background: "var(--accent-cyan)",
+                  color: "#000",
+                  padding: "0.5rem 1rem",
+                  borderRadius: "4px",
+                  textDecoration: "none",
+                  fontWeight: "bold",
+                  fontSize: "0.9rem"
+                }}
+              >
+                Continue manually ➜
+              </a>
+            </div>
           </>
         )}
         
@@ -192,7 +194,7 @@ function ActionContent() {
         <ExternalLink size={16} /> View full context in Notion
       </button>
 
-    </motion.div>
+    </div>
   );
 }
 

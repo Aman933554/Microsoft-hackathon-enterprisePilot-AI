@@ -133,15 +133,18 @@ async function executeActionNode(state: typeof GraphState.State, config?: any) {
       process.env.GITHUB_ENGINEER_2 || "engineer2"
     ].filter(Boolean))); // removes duplicates and empty strings
     
-    await sendSlackMessage(`Architecture "${state.proposal.title}" has been fully approved by Manager. Initiating kickoff! Budget: ₹${state.proposal.budget}\nDeadline: ${deadlineDate.toDateString()}`);
-    await createGithubIssue(state.proposal.title, issueBody, ["engineering", "approved"], assignees);
-    await sendNotificationEmail("amansharma846706@gmail.com", `New GitHub Issue Created: ${state.proposal.title}`, `A new GitHub issue has been successfully created and assigned to you and your team.\n\nProject: ${state.proposal.title}\nDeadline: ${deadlineDate.toLocaleString()}\n\nPlease check your GitHub repository for more details.`);
-    
     // Create a calendar event for tomorrow
     const kickoffDate = new Date();
     kickoffDate.setDate(kickoffDate.getDate() + 1);
     kickoffDate.setHours(10, 0, 0, 0); // 10:00 AM tomorrow
-    await createCalendarEvent(state.proposal.title, kickoffDate, ["engineering@enterprisepilot.ai", "manager@enterprisepilot.ai"]);
+
+    // Run all external actions in parallel to speed up approval
+    await Promise.all([
+      sendSlackMessage(`Architecture "${state.proposal.title}" has been fully approved by Manager. Initiating kickoff! Budget: ₹${state.proposal.budget}\nDeadline: ${deadlineDate.toDateString()}`),
+      createGithubIssue(state.proposal.title, issueBody, ["engineering", "approved"], assignees),
+      sendNotificationEmail("amansharma846706@gmail.com", `New GitHub Issue Created: ${state.proposal.title}`, `A new GitHub issue has been successfully created and assigned to you and your team.\n\nProject: ${state.proposal.title}\nDeadline: ${deadlineDate.toLocaleString()}\n\nPlease check your GitHub repository for more details.`),
+      createCalendarEvent(state.proposal.title, kickoffDate, ["engineering@enterprisepilot.ai", "manager@enterprisepilot.ai"])
+    ]);
 
     if (threadId) await logAudit(threadId, "DevOps", "Executing Pipeline", "SUCCESS");
   } else {

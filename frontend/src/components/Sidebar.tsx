@@ -45,11 +45,11 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean, setIsOpen?: (
       initial={{ x: -280 }}
       animate={{ x: isOpen !== false ? 0 : -280 }}
       transition={{ type: "spring", stiffness: 260, damping: 20 }}
-      className="fixed top-0 left-0 w-[260px] h-screen bg-[#0b1120] border-r border-white/5 flex flex-col z-50 overflow-y-auto custom-scrollbar"
+      className="fixed top-0 left-0 w-[260px] h-screen bg-card/80 backdrop-blur-3xl border-r border-white/5 flex flex-col z-50 overflow-y-auto custom-scrollbar"
     >
       {/* Header */}
       <Link href="/" className="flex items-center gap-3 p-5 mt-2 hover:bg-white/5 transition-colors cursor-pointer">
-        <div className="w-10 h-10 rounded-xl bg-[#1e293b]/50 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0">
+        <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/30 flex items-center justify-center text-primary shrink-0">
           <Cpu size={20} />
         </div>
         <div className="flex flex-col">
@@ -79,9 +79,9 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean, setIsOpen?: (
                   )}
                 >
                   {isActive && (
-                    <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.8)]" />
+                    <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-primary shadow-[0_0_15px_rgba(220,20,60,0.8)]" />
                   )}
-                  <Icon size={18} className={isActive ? "text-cyan-400" : "text-slate-400 group-hover:text-slate-400"} />
+                  <Icon size={18} className={isActive ? "text-primary" : "text-slate-400 group-hover:text-slate-400"} />
                   <span className={cn("text-[13.5px]", isActive ? "font-semibold" : "font-medium")}>
                     {item.label}
                   </span>
@@ -120,7 +120,7 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean, setIsOpen?: (
       </div>
 
       {/* User Profile */}
-      <div className="fixed bottom-0 left-0 w-[260px] p-4 bg-[#0b1120] border-t border-white/5 z-20">
+      <div className="fixed bottom-0 left-0 w-[260px] p-4 bg-card/80 backdrop-blur-3xl border-t border-white/5 z-20">
         <div className="flex items-center justify-between p-2 hover:bg-white/5 rounded-xl transition-colors cursor-pointer group">
           <div className="flex items-center gap-3">
             <UserButton afterSignOutUrl="/" />

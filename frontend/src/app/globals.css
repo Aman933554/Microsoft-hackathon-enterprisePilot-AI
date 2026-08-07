@@ -4,34 +4,42 @@
 
 @layer base {
   :root {
-    /* Premium Midnight Navy Theme */
-    --background: 222 47% 8%;     /* Deep Midnight Navy #0B1120 */
-    --foreground: 210 40% 98%;    /* Off-white */
+    /* Obsidian & Crimson Theme */
+    --background: 0 0% 3%;        /* Obsidian Black #080808 */
+    --foreground: 0 0% 98%;       /* Off-white */
     
-    --card: 222 42% 13%;          /* Ocean Blue #131B2F */
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 6%;              /* Dark Charcoal #0f0f0f */
+    --card-foreground: 0 0% 98%;
     
-    --popover: 222 42% 13%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 6%;
+    --popover-foreground: 0 0% 98%;
     
-    --primary: 210 100% 60%;      /* Bright Blue Accent */
+    --primary: 348 83% 47%;       /* Ruby Red #dc143c */
     --primary-foreground: 0 0% 100%;
     
-    --secondary: 260 60% 65%;     /* Soft Purple */
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 43 100% 50%;     /* Amber / Gold #ffbf00 */
+    --secondary-foreground: 0 0% 10%;
     
-    --muted: 222 30% 20%;         /* Muted Navy */
-    --muted-foreground: 215 20% 65%;
+    --muted: 0 0% 15%;            /* Muted Grey */
+    --muted-foreground: 0 0% 65%;
     
-    --accent: 190 90% 50%;        /* Cyan Accent */
-    --accent-foreground: 0 0% 10%;
+    --accent: 348 83% 47%;        /* Crimson Accent */
+    --accent-foreground: 0 0% 100%;
+    
+    --accent-purple: #e11d48;     /* Re-mapped to Rose */
+    --accent-emerald: #10b981;    /* Keep emerald for success states */
+    --accent-danger: #ef4444;
+    --accent-cyan: #fbbf24;       /* Re-mapped to Amber */
+    
+    --text-secondary: #a1a1aa;
+    --text-muted: #71717a;
     
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
     
-    --border: 230 20% 12%;
-    --input: 230 20% 10%;
-    --ring: 180 100% 40%;         
+    --border: 0 0% 15%;
+    --input: 0 0% 10%;
+    --ring: 348 83% 47%;          /* Crimson Ring */
     
     --radius: 20px;
   }
@@ -48,10 +56,15 @@
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
     background-color: hsl(var(--background));
-    /* Ambient background glow */
+    
+    /* Cyberpunk Grid + Ambient Glow */
     background-image: 
-      radial-gradient(circle at 15% 50%, rgba(6, 182, 212, 0.03) 0%, transparent 50%),
-      radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.03) 0%, transparent 50%);
+      linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      radial-gradient(circle at 15% 50%, rgba(220, 20, 60, 0.06) 0%, transparent 40%),
+      radial-gradient(circle at 85% 30%, rgba(255, 191, 0, 0.04) 0%, transparent 40%);
+    background-size: 30px 30px, 30px 30px, 100% 100%, 100% 100%;
+    background-position: center center;
     background-attachment: fixed;
   }
 }
@@ -59,23 +72,29 @@
 /* Premium Enterprise UI Utilities */
 @layer utilities {
   .luxury-card {
-    @apply bg-card/60 backdrop-blur-2xl border border-white/5 rounded-[20px] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05),0_8px_32px_rgba(0,0,0,0.4)] transition-all duration-500 ease-out;
+    @apply bg-card/40 backdrop-blur-3xl border border-white/5 rounded-[20px] shadow-[inset_0_1px_1px_rgba(255,255,255,0.07),0_8px_32px_rgba(0,0,0,0.6)] transition-all duration-500 ease-out;
   }
   
   .luxury-card-hover {
-    @apply hover:border-primary/30 hover:bg-card/80 hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_0_40px_rgba(6,182,212,0.15)] hover:-translate-y-1;
+    @apply hover:border-primary/40 hover:bg-card/60 hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_0_40px_rgba(220,20,60,0.25)] hover:-translate-y-1.5;
   }
 
   .glass-panel {
-    @apply bg-card/40 backdrop-blur-3xl border border-white/10 rounded-[24px] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)];
+    @apply bg-card/30 backdrop-blur-[40px] border border-white/10 rounded-[24px] shadow-[inset_0_1px_1px_rgba(255,255,255,0.08),0_10px_40px_rgba(0,0,0,0.5)];
   }
   
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-rose-500 via-red-600 to-amber-500 bg-[length:200%_auto] animate-[gradient_4s_linear_infinite];
   }
 
   .text-gradient-purple {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-500;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 bg-[length:200%_auto] animate-[gradient_4s_linear_infinite];
+  }
+
+  @keyframes gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
   }
   
   .pulse-ring {
@@ -83,9 +102,9 @@
   }
   
   @keyframes ring-pulse {
-    0% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.4); }
-    70% { box-shadow: 0 0 0 10px rgba(6, 182, 212, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); }
+    0% { box-shadow: 0 0 0 0 rgba(220, 20, 60, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(220, 20, 60, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(220, 20, 60, 0); }
   }
 
   /* Custom Glow Buttons */
@@ -93,7 +112,7 @@
     @apply relative overflow-hidden bg-primary/10 text-primary border border-primary/30 rounded-full px-6 py-2 font-medium transition-all duration-300;
   }
   .btn-glow:hover {
-    @apply bg-primary/20 border-primary/60 shadow-[0_0_20px_rgba(6,182,212,0.4)];
+    @apply bg-primary/20 border-primary/60 shadow-[0_0_20px_rgba(220,20,60,0.4)];
   }
 }
 

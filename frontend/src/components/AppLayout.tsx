@@ -25,7 +25,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const isFullScreen = pathname === '/' || pathname === '/login';
+  const isFullScreen = pathname === '/' || pathname === '/login' || pathname === '/action';
 
   if (isFullScreen) {
     return <div className="flex-1 w-full min-h-screen bg-background">{children}</div>;

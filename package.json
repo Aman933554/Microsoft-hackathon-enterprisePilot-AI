@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "cd frontend && npx next dev",
+    "dev": "cd frontend && npx next dev -H 0.0.0.0",
     "build": "npx prisma generate && npx prisma db push --accept-data-loss && cd frontend && npx next build --debug",
     "start": "cd frontend && npx next start",
     "lint": "echo 'Skipping lint'",

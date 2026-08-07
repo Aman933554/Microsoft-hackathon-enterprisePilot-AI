@@ -89,13 +89,15 @@ export async function resumeDemo(threadId: string, approved: boolean) {
         threadConfig,
         { humanApproved: approved }
       );
-      // Resume the graph
-      await orchestratorApp.invoke(null, threadConfig);
+      // Resume the graph IN THE BACKGROUND so the frontend doesn't hang!
+      orchestratorApp.invoke(null, threadConfig).then(() => {
+        console.log("\n✅ Background Workflow Completed and Actions Executed.");
+      }).catch(e => {
+        console.error(`[BACKGROUND ERROR] Could not complete thread ${threadId}:`, e);
+      });
     } catch (e: any) {
-      console.log(`[WARNING] Could not resume thread ${threadId} in LangGraph (likely memory wiped). Proceeding to resolve in DB anyway.`);
+      console.log(`[WARNING] Could not update state for thread ${threadId} in LangGraph. Proceeding to resolve in DB anyway.`);
     }
-
-    console.log("\n✅ Workflow Completed and Actions Executed.");
     
     threadStatuses[threadId] = { resolved: true, approved, logs };
 

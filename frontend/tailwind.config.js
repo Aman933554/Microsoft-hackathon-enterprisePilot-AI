@@ -51,17 +51,17 @@ module.exports = {
           foreground: "hsl(var(--card-foreground))",
         },
         brand: {
-          blue: "#3B82F6",
-          cyan: "#06B6D4",
-          emerald: "#10B981",
-          purple: "#8B5CF6",
-          fuchsia: "#D946EF",
+          blue: "#e11d48",      /* Rose */
+          cyan: "#dc143c",      /* Ruby Red */
+          emerald: "#10B981",   /* Keep Emerald */
+          purple: "#ffbf00",    /* Amber / Gold */
+          fuchsia: "#ef4444",   /* Red */
           warning: "#F59E0B",
           error: "#EF4444",
           success: "#22C55E",
-          surface: "#0B0E14",
-          dark: "#030509",
-          card: "#0B0E14"
+          surface: "#0f0f0f",   /* Charcoal */
+          dark: "#080808",      /* Obsidian */
+          card: "#0f0f0f"       /* Charcoal */
         }
       },
       borderRadius: {

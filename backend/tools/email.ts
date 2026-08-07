@@ -55,8 +55,8 @@ export async function sendApprovalEmail(budget: number, feature: string, threadI
         </table>
 
         <div style="text-align: center; margin-top: 30px;">
-          <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/action?threadId=${threadId}&budget=${budget}&feature=${encodeURIComponent(feature)}&approved=true" style="background-color: #10b981; color: #000; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; margin-right: 10px;">Approve ✅</a>
-          <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/action?threadId=${threadId}&budget=${budget}&feature=${encodeURIComponent(feature)}&approved=false" style="background-color: #ef4444; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Reject ❌</a>
+          <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/resume-agent?threadId=${threadId}&budget=${budget}&feature=${encodeURIComponent(feature)}&approved=true" style="background-color: #10b981; color: #000; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; margin-right: 10px;">Approve ✅</a>
+          <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/resume-agent?threadId=${threadId}&budget=${budget}&feature=${encodeURIComponent(feature)}&approved=false" style="background-color: #ef4444; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Reject ❌</a>
         </div>
         <div style="text-align: center; margin-top: 20px;">
           <a href="https://notion.so" style="color: #a1a1aa; text-decoration: underline; font-size: 0.9rem;">Review full details in Notion</a>
