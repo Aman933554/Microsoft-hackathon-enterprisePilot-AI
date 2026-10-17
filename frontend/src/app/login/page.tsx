@@ -10,9 +10,15 @@ import { motion } from "framer-motion";
 export default function LoginPage() {
   const router = useRouter();
   const { isSignedIn, isLoaded } = useAuth();
-  const { isLoaded: isSignInLoaded, signIn } = useSignIn();
-  const { isLoaded: isSignUpLoaded, signUp } = useSignUp();
-  const { setActive } = useClerk();
+  const { signIn } = useSignIn();
+  const { signUp } = useSignUp();
+  const clerk = useClerk();
+  const { setActive } = clerk;
+
+  const isAuthReady = isLoaded || clerk?.loaded;
+  const activeSignUp = signUp || clerk?.client?.signUp;
+  const activeSignIn = signIn || clerk?.client?.signIn;
+  const activeSetActive = setActive || clerk?.setActive;
   
   const [isLogin, setIsLogin] = useState(true);
   
@@ -43,8 +49,21 @@ export default function LoginPage() {
     setDebugMsg("handleAuth triggered...");
     setIsLoading(true);
 
+    // Wait up to 2.5s if Clerk is still initializing
+    let readySignUp = signUp || clerk?.client?.signUp;
+    let readySignIn = signIn || clerk?.client?.signIn;
+    if (!clerk?.loaded && !isLoaded) {
+      for (let i = 0; i < 10; i++) {
+        await new Promise((res) => setTimeout(res, 250));
+        readySignUp = signUp || clerk?.client?.signUp;
+        readySignIn = signIn || clerk?.client?.signIn;
+        if (clerk?.loaded || isLoaded) break;
+      }
+    }
+
     if (isLogin) {
-      if (!isSignInLoaded || !signIn) {
+      const currentSignIn = readySignIn || clerk?.client?.signIn;
+      if (!currentSignIn) {
         setError("Authentication service is initializing, please wait a moment.");
         setIsLoading(false);
         return;
@@ -54,24 +73,24 @@ export default function LoginPage() {
         setIsLoading(false);
         return;
       }
-      setDebugMsg("Mode: Login. Calling signIn.create...");
+      setDebugMsg("Mode: Login. Calling currentSignIn.create...");
       try {
-        setDebugMsg("Calling signIn.create...");
-        const result = await signIn.create({
+        setDebugMsg("Calling currentSignIn.create...");
+        const result = await currentSignIn.create({
           identifier: email.trim(),
           password,
         });
 
-        const status = result?.status || signIn.status;
-        const sessionId = result?.createdSessionId || signIn.createdSessionId;
+        const status = result?.status || currentSignIn.status;
+        const sessionId = result?.createdSessionId || currentSignIn.createdSessionId;
 
         if (status === "complete") {
           setDebugMsg("SignIn complete. Setting active session...");
-          await setActive({ session: sessionId });
+          await activeSetActive({ session: sessionId });
           router.push("/dashboard");
         } else {
           setDebugMsg("SignIn incomplete: " + JSON.stringify(result));
-          console.log("SignIn Result:", result, "signIn obj:", signIn);
+          console.log("SignIn Result:", result, "signIn obj:", currentSignIn);
           
           // Check if it's an error object returned directly
           if (result && (result as any).error) {
@@ -98,7 +117,8 @@ export default function LoginPage() {
         setIsLoading(false);
       }
     } else {
-      if (!isSignUpLoaded || !signUp) {
+      const currentSignUp = readySignUp || clerk?.client?.signUp;
+      if (!currentSignUp) {
         setError("Authentication service is initializing, please wait a moment.");
         setIsLoading(false);
         return;
@@ -108,15 +128,15 @@ export default function LoginPage() {
         setIsLoading(false);
         return;
       }
-      setDebugMsg("Mode: Register. Calling signUp.create...");
+      setDebugMsg("Mode: Register. Calling currentSignUp.create...");
       try {
-        setDebugMsg("Calling signUp.create...");
+        setDebugMsg("Calling currentSignUp.create...");
         
         const nameParts = fullName.trim().split(" ");
         const firstName = nameParts[0] || "";
         const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "";
 
-        const result = await signUp.create({
+        const result = await currentSignUp.create({
           firstName,
           lastName,
           emailAddress: email.trim(),
@@ -129,18 +149,17 @@ export default function LoginPage() {
         }
 
         setDebugMsg("Calling prepareEmailAddressVerification...");
-        console.log("AVAILABLE METHODS ON signUp:", Object.keys(signUp));
-        console.log("signUp prototype methods:", Object.getOwnPropertyNames(Object.getPrototypeOf(signUp)));
+        console.log("AVAILABLE METHODS ON currentSignUp:", Object.keys(currentSignUp));
         
         let sendResult;
         if (result && typeof (result as any).sendEmailCode === 'function') {
           sendResult = await (result as any).sendEmailCode();
-        } else if (typeof signUp.sendEmailCode === 'function') {
-          sendResult = await signUp.sendEmailCode();
-        } else if (typeof signUp.prepareEmailAddressVerification === 'function') {
-          sendResult = await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
-        } else if (typeof signUp.prepareVerification === 'function') {
-          sendResult = await signUp.prepareVerification({ strategy: "email_code" });
+        } else if (typeof currentSignUp.sendEmailCode === 'function') {
+          sendResult = await currentSignUp.sendEmailCode();
+        } else if (typeof currentSignUp.prepareEmailAddressVerification === 'function') {
+          sendResult = await currentSignUp.prepareEmailAddressVerification({ strategy: "email_code" });
+        } else if (typeof currentSignUp.prepareVerification === 'function') {
+          sendResult = await currentSignUp.prepareVerification({ strategy: "email_code" });
         } else {
           throw new Error("No verification method found! Please make sure Clerk SDK is correctly configured.");
         }
@@ -174,28 +193,28 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      console.log("AVAILABLE METHODS ON signUp in Verify:", Object.keys(signUp));
-      console.log("signUp prototype methods in Verify:", Object.getOwnPropertyNames(Object.getPrototypeOf(signUp)));
+      const currentSignUp = signUp || clerk?.client?.signUp;
+      if (!currentSignUp) throw new Error("Sign up session not found. Please try signing up again.");
 
       let completeSignUp;
-      if (typeof signUp.verifyEmailCode === 'function') {
-        completeSignUp = await signUp.verifyEmailCode({ code });
-      } else if (typeof signUp.attemptEmailAddressVerification === 'function') {
-        completeSignUp = await signUp.attemptEmailAddressVerification({ code });
-      } else if (typeof signUp.attemptVerification === 'function') {
-        completeSignUp = await signUp.attemptVerification({ strategy: "email_code", code });
+      if (typeof currentSignUp.verifyEmailCode === 'function') {
+        completeSignUp = await currentSignUp.verifyEmailCode({ code });
+      } else if (typeof currentSignUp.attemptEmailAddressVerification === 'function') {
+        completeSignUp = await currentSignUp.attemptEmailAddressVerification({ code });
+      } else if (typeof currentSignUp.attemptVerification === 'function') {
+        completeSignUp = await currentSignUp.attemptVerification({ strategy: "email_code", code });
       } else {
         throw new Error("No attemptVerification method found on signUp object!");
       }
       
-      const status = completeSignUp?.status || signUp.status;
-      const createdSessionId = completeSignUp?.createdSessionId || signUp.createdSessionId;
+      const status = completeSignUp?.status || currentSignUp.status;
+      const createdSessionId = completeSignUp?.createdSessionId || currentSignUp.createdSessionId;
 
       if (status === 'complete') {
-        await setActive({ session: createdSessionId });
+        await activeSetActive({ session: createdSessionId });
         router.push("/dashboard");
       } else {
-        setDebugMsg("Verify incomplete: " + JSON.stringify(completeSignUp || signUp));
+        setDebugMsg("Verify incomplete: " + JSON.stringify(completeSignUp || currentSignUp));
         setError("Verification incomplete. Status: " + status);
       }
     } catch (err: any) {
@@ -211,9 +230,12 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
+      const currentSignIn = signIn || clerk?.client?.signIn;
+      if (!currentSignIn) throw new Error("Authentication service is initializing, please wait a moment.");
+
       if (forgotPasswordStep === 0) {
         // Step 1: Request reset code
-        await signIn.create({
+        await currentSignIn.create({
           strategy: 'reset_password_email_code',
           identifier: email,
         });
@@ -225,19 +247,19 @@ export default function LoginPage() {
         let methodUsed = '';
         
         try {
-          if (typeof signIn.verifyResetPasswordEmailCode === 'function' && typeof signIn.submitResetPassword === 'function') {
+          if (typeof currentSignIn.verifyResetPasswordEmailCode === 'function' && typeof currentSignIn.submitResetPassword === 'function') {
             methodUsed = 'verify+submit (2-step)';
             // First verify the code
-            const verifyResult = await signIn.verifyResetPasswordEmailCode({ code });
+            const verifyResult = await currentSignIn.verifyResetPasswordEmailCode({ code });
             
             // Then submit the new password
-            result = await signIn.submitResetPassword({ password: newPassword, signOutOfOtherSessions: true });
-          } else if (typeof signIn.submitResetPassword === 'function') {
+            result = await currentSignIn.submitResetPassword({ password: newPassword, signOutOfOtherSessions: true });
+          } else if (typeof currentSignIn.submitResetPassword === 'function') {
             methodUsed = 'submitResetPassword';
-            result = await signIn.submitResetPassword({ code, password: newPassword, signOutOfOtherSessions: true });
-          } else if (typeof signIn.attemptFirstFactor === 'function') {
+            result = await currentSignIn.submitResetPassword({ code, password: newPassword, signOutOfOtherSessions: true });
+          } else if (typeof currentSignIn.attemptFirstFactor === 'function') {
             methodUsed = 'attemptFirstFactor';
-            result = await signIn.attemptFirstFactor({ strategy: 'reset_password_email_code', code, password: newPassword, signOutOfOtherSessions: true });
+            result = await currentSignIn.attemptFirstFactor({ strategy: 'reset_password_email_code', code, password: newPassword, signOutOfOtherSessions: true });
           } else {
             throw new Error("No known reset method found on signIn");
           }
@@ -247,7 +269,7 @@ export default function LoginPage() {
           if (methodUsed === 'verify+submit (2-step)') {
             try {
               methodUsed = 'verifyResetPasswordEmailCode (combined)';
-              result = await signIn.verifyResetPasswordEmailCode({ code, password: newPassword });
+              result = await currentSignIn.verifyResetPasswordEmailCode({ code, password: newPassword });
             } catch (fallbackError: any) {
               throw fallbackError;
             }
@@ -257,15 +279,15 @@ export default function LoginPage() {
         }
 
         // Sometimes the result is undefined in newer SDKs, so we check the signIn object itself
-        const finalStatus = result?.status || signIn.status;
-        const sessionId = result?.createdSessionId || signIn.createdSessionId;
+        const finalStatus = result?.status || currentSignIn.status;
+        const sessionId = result?.createdSessionId || currentSignIn.createdSessionId;
 
         if (finalStatus === 'complete') {
-          if (typeof signIn.finalize === 'function') {
-            await signIn.finalize();
+          if (typeof currentSignIn.finalize === 'function') {
+            await currentSignIn.finalize();
             router.push("/dashboard");
           } else {
-            await setActive({ session: sessionId });
+            await activeSetActive({ session: sessionId });
             router.push("/dashboard");
           }
         } else {
