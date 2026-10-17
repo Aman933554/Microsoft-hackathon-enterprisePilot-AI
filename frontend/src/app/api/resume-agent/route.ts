@@ -40,3 +40,24 @@ export async function GET(req: Request) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
+export async function POST(req: Request) {
+  console.log(">>>>>>>> API POST /api/resume-agent WAS CALLED! <<<<<<<<");
+  try {
+    const body = await req.json();
+    const { threadId, approved, email } = body;
+    
+    console.log(">>>>>>>> POST Request Params:", { threadId, approved, email });
+    
+    if (!threadId) {
+      return NextResponse.json({ success: false, error: 'Missing threadId' }, { status: 400 });
+    }
+
+    const logs = await resumeDemo(threadId, approved);
+    
+    return NextResponse.json({ success: true, logs });
+  } catch (error: any) {
+    console.error("API Error (POST):", error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}

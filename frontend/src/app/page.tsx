@@ -1,9 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { GeistSans } from "geist/font/sans";
 import { UserButton, useAuth } from "@clerk/nextjs";
+import { AiAgentDemo } from "../components/AiAgentDemo";
+import { DashboardAgentWorkflow } from "../components/DashboardAgentWorkflow";
+import { WorkflowBuilderDemo } from "../components/WorkflowBuilderDemo";
 
 function SignedIn({ children }: { children: React.ReactNode }) {
   const { isSignedIn } = useAuth();
@@ -18,6 +21,37 @@ function SignedOut({ children }: { children: React.ReactNode }) {
 }
 
 export default function LandingPage() {
+  const [activeSection, setActiveSection] = useState('top');
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const sections = ['top', 'problem', 'how-it-works', 'agents', 'integrations'];
+      let current = 'top';
+
+      for (const section of sections) {
+        const element = document.getElementById(section);
+        if (element) {
+          const rect = element.getBoundingClientRect();
+          if (rect.top <= 200) {
+            current = section;
+          }
+        }
+      }
+      setActiveSection(current);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const navLinks = [
+    { id: 'top', label: 'Home' },
+    { id: 'problem', label: 'Problem' },
+    { id: 'how-it-works', label: 'How It Works' },
+    { id: 'agents', label: 'AI Agents' },
+    { id: 'integrations', label: 'Integrations' },
+  ];
+
   return (
     <div id="top" className={`min-h-screen bg-background text-foreground ${GeistSans.className}`}>
       {/* Cyberpunk Grid Background */}
@@ -46,26 +80,23 @@ export default function LandingPage() {
           </div>
           
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
-            <a href="#top" className="relative text-primary group py-2">
-              Home
-              <span className="absolute bottom-0 left-0 w-full h-[2px] bg-primary rounded-full shadow-[0_0_10px_rgba(220,20,60,0.8)]"></span>
-            </a>
-            <a href="#problem" className="relative hover:text-white transition-colors duration-300 group py-2">
-              Problem
-              <span className="absolute bottom-0 left-1/2 w-0 h-[2px] bg-primary rounded-full transition-all duration-300 group-hover:w-full group-hover:left-0 opacity-0 group-hover:opacity-100 shadow-[0_0_10px_rgba(220,20,60,0.8)]"></span>
-            </a>
-            <a href="#how-it-works" className="relative hover:text-white transition-colors duration-300 group py-2">
-              How It Works
-              <span className="absolute bottom-0 left-1/2 w-0 h-[2px] bg-primary rounded-full transition-all duration-300 group-hover:w-full group-hover:left-0 opacity-0 group-hover:opacity-100 shadow-[0_0_10px_rgba(220,20,60,0.8)]"></span>
-            </a>
-            <a href="#agents" className="relative hover:text-white transition-colors duration-300 group py-2">
-              AI Agents
-              <span className="absolute bottom-0 left-1/2 w-0 h-[2px] bg-primary rounded-full transition-all duration-300 group-hover:w-full group-hover:left-0 opacity-0 group-hover:opacity-100 shadow-[0_0_10px_rgba(220,20,60,0.8)]"></span>
-            </a>
-            <a href="#integrations" className="relative hover:text-white transition-colors duration-300 group py-2">
-              Integrations
-              <span className="absolute bottom-0 left-1/2 w-0 h-[2px] bg-primary rounded-full transition-all duration-300 group-hover:w-full group-hover:left-0 opacity-0 group-hover:opacity-100 shadow-[0_0_10px_rgba(220,20,60,0.8)]"></span>
-            </a>
+            {navLinks.map((link) => (
+              <a 
+                key={link.id}
+                href={`#${link.id}`} 
+                onClick={() => setActiveSection(link.id)}
+                className={`relative group py-2 transition-colors duration-300 ${activeSection === link.id ? 'text-primary' : 'hover:text-white'}`}
+              >
+                {link.label}
+                <span 
+                  className={`absolute bottom-0 h-[2px] bg-primary rounded-full transition-all duration-300 shadow-[0_0_10px_rgba(220,20,60,0.8)] ${
+                    activeSection === link.id 
+                      ? 'w-full left-0 opacity-100' 
+                      : 'w-0 left-1/2 group-hover:w-full group-hover:left-0 opacity-0 group-hover:opacity-100'
+                  }`}
+                ></span>
+              </a>
+            ))}
           </div>
 
           <div className="flex items-center gap-4">
@@ -92,8 +123,8 @@ export default function LandingPage() {
         {/* Subtle background glow */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/10 rounded-full blur-[100px] -z-10"></div>
         
-        <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
-          <div className="max-w-2xl">
+        <div className="max-w-[1400px] mx-auto px-6 grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+          <div className="max-w-2xl lg:pr-8">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary text-xs font-semibold uppercase tracking-wider mb-8 shadow-[0_0_15px_rgba(220,20,60,0.2)]">
               <span>AI-Native Enterprise Operating System</span>
             </div>
@@ -107,73 +138,23 @@ export default function LandingPage() {
               <Link href="/login" className="bg-primary text-white px-8 py-4 rounded-full font-medium hover:bg-primary/80 transition-colors flex items-center gap-2 shadow-[0_0_20px_rgba(220,20,60,0.4)] text-lg">
                 Get Started &rarr;
               </Link>
-              <button className="px-8 py-4 rounded-full font-medium text-slate-300 border border-white/10 hover:bg-white/5 flex items-center gap-2 transition-colors text-lg">
+              <a href="#how-it-works" onClick={() => setActiveSection('how-it-works')} className="px-8 py-4 rounded-full font-medium text-slate-300 border border-white/10 hover:bg-white/5 flex items-center gap-2 transition-colors text-lg">
                 See How It Works
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-              </button>
+              </a>
             </div>
           </div>
           
-          <div className="relative">
-            {/* Visual Flowchart Representation */}
-            <div className="bg-card/40 backdrop-blur-xl p-8 rounded-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.05),0_10px_40px_rgba(0,0,0,0.5)] border border-white/5">
-              <div className="flex flex-col items-center gap-6">
-                <div className="bg-emerald-500/10 text-emerald-400 px-6 py-4 rounded-xl border border-emerald-500/20 flex items-center gap-4 w-full">
-                  <div className="bg-emerald-500/20 p-2 rounded-lg">
-                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-white">Business Request</h4>
-                    <p className="text-sm text-emerald-500/80">Submitted by employee</p>
-                  </div>
+          <div className="relative group w-full h-[500px] sm:h-[600px] flex justify-center lg:justify-end items-center">
+             <div className="absolute w-[1000px] origin-center lg:origin-right scale-[0.35] sm:scale-[0.55] md:scale-[0.65] lg:scale-[0.55] xl:scale-[0.65]">
+                <div className="absolute -inset-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-3xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+                <div className="relative w-full z-10 pointer-events-none">
+                  <DashboardAgentWorkflow isRunning={true} />
                 </div>
-                
-                <div className="w-px h-8 bg-white/10"></div>
-                
-                <div className="flex gap-4 w-full">
-                  <div className="bg-primary/10 text-primary px-6 py-4 rounded-xl border border-primary/20 flex-1 flex flex-col items-center text-center shadow-[0_0_15px_rgba(220,20,60,0.1)]">
-                    <div className="bg-primary/20 p-2 rounded-lg mb-2">
-                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                    </div>
-                    <h4 className="font-semibold text-white text-sm">AI Agents Collaborate</h4>
-                    <p className="text-xs text-primary/80 mt-1">Analyze & negotiate</p>
-                  </div>
-                  <div className="bg-amber-500/10 text-amber-500 px-6 py-4 rounded-xl border border-amber-500/20 flex-1 flex flex-col items-center text-center">
-                    <div className="bg-amber-500/20 p-2 rounded-lg mb-2">
-                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                    </div>
-                    <h4 className="font-semibold text-white text-sm">Human Approval</h4>
-                    <p className="text-xs text-amber-500/80 mt-1">Review & approve</p>
-                  </div>
-                </div>
-                
-                <div className="w-px h-8 bg-white/10"></div>
-                
-                <div className="flex gap-4 w-full">
-                  <div className="bg-card/60 text-slate-300 px-6 py-4 rounded-xl border border-white/5 flex-1 flex items-center gap-3">
-                    <div className="bg-white/5 p-2 rounded-lg border border-white/10">
-                      <svg className="w-5 h-5 text-slate-300" viewBox="0 0 24 24"><path fill="currentColor" d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-white text-sm">GitHub Tasks</h4>
-                      <p className="text-[10px] text-slate-500">Issues & assignments</p>
-                    </div>
-                  </div>
-                  <div className="bg-card/60 text-slate-300 px-6 py-4 rounded-xl border border-white/5 flex-1 flex items-center gap-3">
-                    <div className="bg-white/5 p-2 rounded-lg border border-white/10 text-primary">
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-white text-sm">Calendar</h4>
-                      <p className="text-[10px] text-slate-500">Schedule & notify</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+             </div>
           </div>
         </div>
       </section>
@@ -273,8 +254,15 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Human Decision Section */}
-      <section id="how-it-works" className="max-w-7xl mx-auto px-6 mb-24">
+      {/* How It Works Section */}
+      <section id="how-it-works" className="max-w-7xl mx-auto px-6 mb-24 flex flex-col gap-12">
+        {/* Diagram Mockup */}
+        <div className="w-full flex flex-col items-center text-center">
+          <h2 className="text-3xl font-bold text-white mb-8">Visual Workflow Builder</h2>
+          <WorkflowBuilderDemo />
+        </div>
+
+        {/* Human Decision Box */}
         <div className="bg-card/60 backdrop-blur-xl rounded-3xl p-8 lg:p-12 border border-white/5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05),0_10px_40px_rgba(0,0,0,0.5)] text-white flex flex-col lg:flex-row gap-12 items-center">
           <div className="lg:w-1/3">
             <h2 className="text-3xl font-bold mb-4">Agents Recommend.<br/>Humans Decide.</h2>

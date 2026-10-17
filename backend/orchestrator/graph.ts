@@ -5,7 +5,7 @@ import { QAAgent } from "../agents/qa";
 import { AgentNotionClient } from "../notion/client";
 import { sendSlackMessage } from "../tools/slack";
 import { sendApprovalEmail, sendNotificationEmail } from "../tools/email";
-import { createGithubIssue } from "../tools/github";
+import { createGithubIssue, createGithubPullRequest } from "../tools/github";
 import { createCalendarEvent } from "../tools/calendar";
 import { prisma } from "../../frontend/src/lib/prisma";
 
@@ -20,6 +20,8 @@ export const GraphState = Annotation.Root({
   qaAnalysis: Annotation<any>(),
   notionPageId: Annotation<string>(),
   humanApproved: Annotation<boolean>(),
+  negotiationRound: Annotation<number>(),
+  userEmail: Annotation<string | undefined>(),
 });
 
 const engineeringAgent = new EngineeringAgent();
@@ -49,6 +51,10 @@ async function logAudit(threadId: string, agent: string, reason: string, status:
 async function engineeringNode(state: typeof GraphState.State, config?: any) {
   const threadId = config?.configurable?.thread_id;
   let newProposal;
+  
+  const currentRound = state.negotiationRound || 0;
+  const newRound = state.proposal ? currentRound + 1 : 1;
+
   if (!state.proposal) {
     newProposal = await engineeringAgent.proposeImplementation(state.goal, state.maxBudget);
     if (threadId) await logAudit(threadId, "Engineering", "Initial Architecture Proposal", "SUCCESS", state.goal, JSON.stringify(newProposal));
@@ -65,7 +71,7 @@ async function engineeringNode(state: typeof GraphState.State, config?: any) {
     rationale: state.financeFeedback ? `Revised based on Finance feedback: ${state.financeFeedback}\nCuts: ${newProposal.revisedDescription}` : "Initial proposal generated for goal"
   });
 
-  return { proposal: newProposal };
+  return { proposal: newProposal, negotiationRound: newRound };
 }
 
 async function financeNode(state: typeof GraphState.State, config?: any) {
@@ -127,6 +133,9 @@ async function executeActionNode(state: typeof GraphState.State, config?: any) {
     // Append deadline to the GitHub issue description
     const issueBody = `${state.proposal.description}\n\n### ✅ Task List\n- [ ] Review architecture proposal\n- [ ] Setup initial repository structure\n- [ ] Implement core features\n- [ ] Code review and testing\n\n---\n🚨 **URGENT:** This work must be completed by **${deadlineDate.toLocaleString()}**.`;
     
+    // Generate Boilerplate Code
+    const boilerplateFiles = await engineeringAgent.generateBoilerplateCode(state.proposal);
+    
     // Get assignees from env or use defaults
     const assignees = Array.from(new Set([
       process.env.GITHUB_ENGINEER_1 || "engineer1",
@@ -137,26 +146,71 @@ async function executeActionNode(state: typeof GraphState.State, config?: any) {
     const kickoffDate = new Date();
     kickoffDate.setDate(kickoffDate.getDate() + 1);
     kickoffDate.setHours(10, 0, 0, 0); // 10:00 AM tomorrow
+    
+    const userEmail = state.userEmail || process.env.MANAGER_EMAIL || "sharmaaman9318411@gmail.com";
+    const actualManagerEmail = process.env.MANAGER_EMAIL || "sharmaaman9318411@gmail.com";
+    const recipients = Array.from(new Set([userEmail, actualManagerEmail])).join(", ");
 
     // Run all external actions in parallel to speed up approval
     await Promise.all([
       sendSlackMessage(`Architecture "${state.proposal.title}" has been fully approved by Manager. Initiating kickoff! Budget: ₹${state.proposal.budget}\nDeadline: ${deadlineDate.toDateString()}`),
       createGithubIssue(state.proposal.title, issueBody, ["engineering", "approved"], assignees),
-      sendNotificationEmail("amansharma846706@gmail.com", `New GitHub Issue Created: ${state.proposal.title}`, `A new GitHub issue has been successfully created and assigned to you and your team.\n\nProject: ${state.proposal.title}\nDeadline: ${deadlineDate.toLocaleString()}\n\nPlease check your GitHub repository for more details.`),
-      createCalendarEvent(state.proposal.title, kickoffDate, ["engineering@enterprisepilot.ai", "manager@enterprisepilot.ai"])
+      createGithubPullRequest(state.proposal.title, issueBody, boilerplateFiles, assignees),
+      sendNotificationEmail(recipients, `New Pull Request Created: ${state.proposal.title}`, `A new GitHub Pull Request with boilerplate code has been successfully created and assigned to you and your team.\n\nProject: ${state.proposal.title}\nDeadline: ${deadlineDate.toLocaleString()}\n\nPlease check your GitHub repository for more details.`),
+      createCalendarEvent(`Kickoff: ${state.proposal.title}`, kickoffDate, ["engineering@enterprisepilot.ai", userEmail, actualManagerEmail])
     ]);
 
     if (threadId) await logAudit(threadId, "DevOps", "Executing Pipeline", "SUCCESS");
   } else {
-    console.log(`[ORCHESTRATOR] Architecture proposal was rejected by human manager.`);
-    if (threadId) await logAudit(threadId, "DevOps", "Pipeline Aborted", "REJECTED");
+    console.log(`[ORCHESTRATOR] Architecture proposal was rejected by human manager. Scheduling sync-up call.`);
+    if (threadId) await logAudit(threadId, "DevOps", "Pipeline Aborted - Scheduling Meeting", "REJECTED");
+    
+    const meetingDate = new Date();
+    meetingDate.setDate(meetingDate.getDate() + 1);
+    meetingDate.setHours(10, 0, 0, 0);
+
+    const featureTitle = state.proposal?.title || "Workflow";
+    const userEmail = state.userEmail || process.env.MANAGER_EMAIL || "sharmaaman9318411@gmail.com";
+    const actualManagerEmail = process.env.MANAGER_EMAIL || "sharmaaman9318411@gmail.com";
+    
+    // Use Set to avoid sending duplicate emails if user is the manager
+    const recipients = Array.from(new Set([userEmail, actualManagerEmail])).join(", ");
+    const calendarAttendees = Array.from(new Set(["engineering@enterprisepilot.ai", userEmail, actualManagerEmail]));
+
+    const calendarResult = await createCalendarEvent(`Sync-up: ${featureTitle}`, meetingDate, calendarAttendees);
+    await sendNotificationEmail(recipients, `Proposal Rejected: ${featureTitle}`, `The manager rejected the proposal. A sync-up call has been scheduled for tomorrow at 10 AM.`, calendarResult.icsContent);
   }
+  return {};
+}
+
+async function scheduleMeetingNode(state: typeof GraphState.State, config?: any) {
+  const threadId = config?.configurable?.thread_id;
+  console.log(`[ORCHESTRATOR] Max negotiation rounds reached. Scheduling sync-up call.`);
+  if (threadId) await logAudit(threadId, "System", "Negotiation Failed - Scheduling Meeting", "FAILED");
+  
+  const meetingDate = new Date();
+  meetingDate.setDate(meetingDate.getDate() + 1);
+  meetingDate.setHours(10, 0, 0, 0);
+
+  const featureTitle = state.proposal?.title || "Workflow";
+  const userEmail = state.userEmail || process.env.MANAGER_EMAIL || "sharmaaman9318411@gmail.com";
+  const actualManagerEmail = process.env.MANAGER_EMAIL || "sharmaaman9318411@gmail.com";
+
+  // Use Set to avoid duplicate attendees
+  const recipients = Array.from(new Set([userEmail, actualManagerEmail])).join(", ");
+  const calendarAttendees = Array.from(new Set(["engineering@enterprisepilot.ai", "finance@enterprisepilot.ai", userEmail, actualManagerEmail]));
+
+  const calendarResult = await createCalendarEvent(`Escalation Sync: ${featureTitle}`, meetingDate, calendarAttendees);
+  await sendNotificationEmail(recipients, `Escalation: Negotiation Failed for ${featureTitle}`, `Agents failed to reach an agreement after 3 rounds. A sync-up call has been scheduled for tomorrow at 10 AM.`, calendarResult.icsContent);
+  
   return {};
 }
 
 function routeAfterFinance(state: typeof GraphState.State) {
   if (state.budgetApprovedByFinance) {
     return "qa";
+  } else if ((state.negotiationRound || 0) >= 3) {
+    return "scheduleMeeting";
   } else {
     return "engineering";
   }
@@ -175,9 +229,11 @@ const workflow = new StateGraph(GraphState)
   .addNode("qa", qaNode)
   .addNode("requestHumanApproval", requestHumanApprovalNode)
   .addNode("executeAction", executeActionNode)
+  .addNode("scheduleMeeting", scheduleMeetingNode)
   .addEdge(START, "engineering")
   .addEdge("engineering", "finance")
   .addConditionalEdges("finance", routeAfterFinance)
+  .addEdge("scheduleMeeting", END)
   .addEdge("qa", "requestHumanApproval")
   .addEdge("requestHumanApproval", "executeAction")
   .addEdge("executeAction", END);

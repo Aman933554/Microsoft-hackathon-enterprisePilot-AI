@@ -2,6 +2,8 @@
 
 Welcome to the future of enterprise automation.
 
+🌐 **Live Demo:** [https://microsoft-hackathon-enterprise-pilo.vercel.app](https://microsoft-hackathon-enterprise-pilo.vercel.app)
+
 ## 🌟 The Vision
 In the future, human workers won't execute tasks; they will **manage, orchestrate, and approve** tasks executed by specialized AI agents. This project demonstrates an AI-Native Enterprise Operating System where Marketing and Finance AI agents autonomously negotiate campaigns, but seamlessly pause to request **real human approval** via Notion before executing financial actions.
 

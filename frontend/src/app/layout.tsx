@@ -16,7 +16,7 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en" className="dark">
+      <html lang="en" className="dark scroll-smooth">
         <body className={`${GeistSans.className} bg-background text-foreground antialiased min-h-screen flex relative`}>
           {/* Subtle radial gradient overlay for premium feel */}
           <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-brand-blue/5 via-background to-background z-[-1]"></div>

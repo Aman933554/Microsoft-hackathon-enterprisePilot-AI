@@ -6,8 +6,22 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AgentGraph } from "../../components/AgentGraph";
 import { TerminalLog } from "../../components/TerminalLog";
 import { ApprovalModal } from "../../components/ApprovalModal";
+import { DashboardAgentWorkflow } from "../../components/DashboardAgentWorkflow";
+import { AiAgentDemo } from "../../components/AiAgentDemo";
 import { useAuth, useUser, SignInButton, UserButton } from "@clerk/nextjs";
 
+const speakAlert = (text: string) => {
+  if (typeof window !== "undefined" && 'speechSynthesis' in window) {
+    console.log("[SPEECH] Speaking via SpeechSynthesis:", text);
+    try {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.volume = 1;
+      window.speechSynthesis.speak(utterance);
+    } catch(e) {
+      console.error("[SPEECH] Error", e);
+    }
+  }
+};
 function SignedIn({ children }: { children: React.ReactNode }) {
   const { isSignedIn } = useAuth();
   if (isSignedIn) return <>{children}</>;
@@ -46,7 +60,7 @@ export default function Dashboard() {
   });
 
   const { user } = useUser();
-  const isManager = user?.primaryEmailAddress?.emailAddress === process.env.NEXT_PUBLIC_MANAGER_EMAIL;
+  const isManager = user?.primaryEmailAddress?.emailAddress === process.env.NEXT_PUBLIC_MANAGER_EMAIL || user?.primaryEmailAddress?.emailAddress === "sharmaaman9318411@gmail.com";
 
   useEffect(() => {
     const savedStateStr = localStorage.getItem("workflow_state");
@@ -79,25 +93,19 @@ export default function Dashboard() {
   }, [appStep, isPaused, threadId, logs, aiReasoningText]);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setSysHealth(prev => {
-        // Very fast and dramatic fluctuation for demo purposes
-        let newRisk = prev.riskScore + (Math.random() > 0.5 ? 1 : -1) * Math.floor(Math.random() * 30 + 15);
-        if (newRisk < 15) newRisk = Math.floor(Math.random() * 20) + 70; // jump high
-        if (newRisk > 95) newRisk = Math.floor(Math.random() * 20) + 15; // jump low
-        newRisk = Math.max(10, Math.min(95, newRisk));
-        
-        return {
-          latency: Math.max(15, Math.min(200, prev.latency + (Math.random() > 0.5 ? 1 : -1) * Math.floor(Math.random() * 20 + 5))),
-          errorRate: isRunning ? Math.max(0.01, Math.min(0.08, +(prev.errorRate + (Math.random() > 0.5 ? 0.02 : -0.02)).toFixed(2))) : 0.01,
-          activeAgents: isRunning ? 15 : Math.max(8, Math.min(14, prev.activeAgents + (Math.random() > 0.5 ? 1 : -1))),
-          queueSize: isRunning ? Math.floor(Math.random() * 5) + 1 : 0,
-          riskScore: newRisk
-        };
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [isRunning]);
+    const active = recentExecutions.filter(w => w.status === 'RUNNING').length + (isRunning ? 1 : 0);
+    const avgRisk = recentExecutions.length > 0 ? 
+      Math.round(recentExecutions.reduce((s, w) => s + (w.riskScore || 15), 0) / recentExecutions.length) : 
+      15;
+
+    setSysHealth(prev => ({
+      latency: isRunning ? 42 : 12,
+      errorRate: isRunning ? 0.01 : 0.00,
+      activeAgents: active,
+      queueSize: pendingApprovals.length + (isRunning ? 1 : 0),
+      riskScore: avgRisk
+    }));
+  }, [recentExecutions, pendingApprovals, isRunning]);
 
   useEffect(() => {
     if (completed) {
@@ -136,9 +144,6 @@ export default function Dashboard() {
   const [description, setDescription] = useState("Build an AI-powered expense tracker that automatically categorizes expenses, detects fraud and generates reports.");
   const [priority, setPriority] = useState("High");
   const [department, setDepartment] = useState("Engineering");
-  const [deadline, setDeadline] = useState("15 Days");
-  const [expectedUsers, setExpectedUsers] = useState("5000");
-  const [attachments, setAttachments] = useState<{name: string}[]>([]);
   const [budget, setBudget] = useState<number | "">(45000);
   const [template, setTemplate] = useState("Custom");
 
@@ -197,7 +202,7 @@ export default function Dashboard() {
                   setShowSuccessPopup(true);
                   localStorage.removeItem("workflow_state");
                 }
-              }, 1500);
+              }, 400);
             } else {
               setIsRunning(false);
               setCompleted(true);
@@ -215,7 +220,7 @@ export default function Dashboard() {
     setAppStep("loading");
     setTimeout(() => {
       startWorkflow();
-    }, 2500);
+    }, 600);
   };
 
   const startWorkflow = async () => {
@@ -228,13 +233,17 @@ export default function Dashboard() {
     
     setLogs(["🚀 Starting AI-Native Enterprise OS Demo..."]);
 
-    const combinedGoal = `Product: ${template !== "Custom" ? template : "General"}\nFeature: ${featureTitle}\nDescription: ${description}\nPriority: ${priority}\nDepartment: ${department}\nDeadline: ${deadline}\nExpected Users: ${expectedUsers}`;
+    const combinedGoal = `Product: ${template !== "Custom" ? template : "General"}\nFeature: ${featureTitle}\nDescription: ${description}\nPriority: ${priority}\nDepartment: ${department}`;
 
     try {
       const res = await fetch("/api/run-agent", { 
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ goal: combinedGoal, maxBudget: budget })
+        body: JSON.stringify({ 
+          goal: combinedGoal, 
+          maxBudget: budget,
+          userEmail: user?.primaryEmailAddress?.emailAddress
+        })
       });
       const data = await res.json();
       
@@ -254,6 +263,7 @@ export default function Dashboard() {
                setIsPaused(true);
                if (isManager) {
                  setShowApprovalModal(true);
+                 speakAlert(`Sir, Engineering requires your approval for the new feature ${featureTitle}.`);
                } else {
                  setShowPendingPopup(true);
                  setLogs(prev => [...prev, "[SYSTEM] ⏳ Waiting for Manager's Approval..."]);
@@ -274,7 +284,7 @@ export default function Dashboard() {
                localStorage.removeItem("workflow_state");
             }
           }
-        }, 1500); 
+        }, 400); 
       } else {
         setLogs(prev => [...prev, "❌ Error: " + data.error]);
         setIsRunning(false);
@@ -315,7 +325,7 @@ export default function Dashboard() {
             setCompleted(true);
             localStorage.removeItem("workflow_state");
           }
-        }, 1500);
+        }, 400);
       } else {
         setLogs(prev => [...prev, "❌ Error: " + data.error]);
         setIsRunning(false);
@@ -393,14 +403,14 @@ export default function Dashboard() {
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
-                  className={`relative flex items-center gap-2 cursor-pointer px-4 py-2 rounded-xl transition-colors font-bold border ${isManager ? 'bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30 border-yellow-500/30' : 'bg-brand-orange/20 text-brand-orange hover:bg-brand-orange/30 border-brand-orange/30'}`}
+                  className={`relative flex items-center gap-2 cursor-pointer px-4 py-2 rounded-xl transition-colors font-bold border ${isManager ? 'bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30 border-yellow-500/30' : 'bg-orange-500/20 text-orange-500 hover:bg-orange-500/30 border-orange-500/30'}`}
                   whileHover={{ scale: 1.05 }}
                   onClick={() => isManager ? setShowApprovalModal(!showApprovalModal) : setShowPendingPopup(true)}
                 >
                   <motion.div 
                     animate={{ opacity: [1, 0.5, 1] }}
                     transition={{ repeat: Infinity, duration: 1.5 }}
-                    className={`w-2 h-2 rounded-full ${isManager ? 'bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.8)]' : 'bg-brand-orange shadow-[0_0_10px_rgba(249,115,22,0.8)]'}`}
+                    className={`w-2 h-2 rounded-full ${isManager ? 'bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.8)]' : 'bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.8)]'}`}
                   />
                   {isManager ? "1 Action Required" : "Pending Approval"}
                 </motion.button>
@@ -424,7 +434,7 @@ export default function Dashboard() {
               <div className="glass-panel p-4 flex flex-col gap-2 hover:-translate-y-1 transition-transform cursor-pointer text-center items-center justify-center">
                 <FolderKanban className="text-blue-400 mb-1" size={24} />
                 <div className="text-slate-400 text-[10px] uppercase tracking-widest font-semibold whitespace-nowrap">Projects</div>
-                <div className="text-2xl font-bold text-white">{recentExecutions.length > 0 ? recentExecutions.length + (appStep !== "dashboard" ? 1 : 0) : (15 + (appStep !== "dashboard" ? 1 : 0))}</div>
+                <div className="text-2xl font-bold text-white">{recentExecutions.length + (appStep !== "dashboard" ? 1 : 0)}</div>
               </div>
               
               <div className="glass-panel p-4 flex flex-col gap-2 hover:-translate-y-1 transition-transform cursor-pointer text-center items-center justify-center">
@@ -458,8 +468,8 @@ export default function Dashboard() {
                 <div className="text-slate-400 text-[10px] uppercase tracking-widest font-semibold whitespace-nowrap">Avg Time</div>
                 <div className="text-2xl font-bold text-white">
                   {recentExecutions.length > 0 ? 
-                    `${Math.max(1, Math.round(recentExecutions.reduce((s, w) => s + w.durationMs, 0) / recentExecutions.length / 60000))}m` 
-                    : "3m"}
+                    `${Math.max(1, Math.round(recentExecutions.reduce((s, w) => s + (w.durationMs || 0), 0) / recentExecutions.length / 60000))}m` 
+                    : "0m"}
                 </div>
               </div>
             </div>
@@ -475,12 +485,11 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="w-full">
-            <h2 className="text-xl font-bold text-white/80 mb-4 px-2">Agent Workflow Map</h2>
-            <div className="glass-panel p-2 h-[400px] border-white/10 rounded-2xl w-full">
-              <AgentGraph logs={[]} isRunning={false} isFullScreen={true} isLiveMode={false} />
-            </div>
+          <div className="w-full mt-6">
+            <DashboardAgentWorkflow isRunning={isRunning} needsApproval={isPaused} />
           </div>
+
+
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
             {/* Recent Executions */}
@@ -598,14 +607,16 @@ export default function Dashboard() {
       {/* FORM STEP */}
       {appStep === "form" && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-panel p-8 max-w-3xl mx-auto border border-primary/30 shadow-[0_0_40px_rgba(6,182,212,0.15)] relative">
-          <button 
-            onClick={() => setAppStep("dashboard")}
-            className="absolute top-4 right-4 text-slate-400 hover:text-white"
-          >
-            ✕ Cancel
-          </button>
-          
-          <h2 className="text-2xl font-bold text-white mb-8 border-b border-white/10 pb-4">📝 New Feature Request</h2>
+          <div className="flex items-center gap-4 mb-8 border-b border-white/10 pb-4">
+            <button 
+              onClick={() => setAppStep("dashboard")}
+              className="flex items-center gap-2 text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 px-4 py-2 rounded-lg transition-colors text-sm font-semibold"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+              Back
+            </button>
+            <h2 className="text-2xl font-bold text-white m-0">📝 New Feature Request</h2>
+          </div>
           
           <div className="flex flex-col gap-6">
             <div className="grid grid-cols-2 gap-6">
@@ -651,54 +662,6 @@ export default function Dashboard() {
                   <option>Marketing</option>
                   <option>Finance</option>
                 </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-6">
-              <div>
-                <label className="block text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2">Deadline</label>
-                <input type="text" value={deadline} onChange={(e) => setDeadline(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-primary/50" />
-              </div>
-              <div>
-                <label className="block text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2">Expected Users</label>
-                <input type="text" value={expectedUsers} onChange={(e) => setExpectedUsers(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-primary/50" />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2">Attachments</label>
-              <div className="flex flex-wrap gap-4">
-                {attachments.map((file, idx) => (
-                  <div key={idx} className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-xl px-4 py-3 group relative">
-                    {file.name.endsWith('.pdf') ? (
-                      <FileText size={18} className="text-red-400" />
-                    ) : (
-                      <ImageIcon size={18} className="text-blue-400" />
-                    )}
-                    <span className="text-sm text-white/80">{file.name}</span>
-                    <button 
-                      className="absolute -top-2 -right-2 bg-red-500/80 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => setAttachments(prev => prev.filter((_, i) => i !== idx))}
-                    >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-                    </button>
-                  </div>
-                ))}
-                
-                <label className="flex items-center justify-center gap-2 border border-dashed border-white/20 rounded-xl px-4 py-3 cursor-pointer hover:border-white/40 bg-white/5 transition-colors">
-                  <input 
-                    type="file" 
-                    className="hidden" 
-                    multiple 
-                    onChange={(e) => {
-                      if (e.target.files) {
-                        const newFiles = Array.from(e.target.files).map(f => ({ name: f.name }));
-                        setAttachments(prev => [...prev, ...newFiles]);
-                      }
-                    }} 
-                  />
-                  <UploadCloud size={18} className="text-slate-400" /> <span className="text-sm text-slate-400">Upload</span>
-                </label>
               </div>
             </div>
             
@@ -812,10 +775,10 @@ export default function Dashboard() {
           </div>
 
           <motion.div 
-            className={`glass-panel border-white/10 ${view === 'terminal' ? 'p-0 border-none bg-transparent shadow-none backdrop-blur-none' : 'p-4 h-[600px] w-full'}`}
+            className={`transition-all duration-500 ${view === 'terminal' ? 'p-0 bg-transparent shadow-none' : 'glass-panel border-white/10 p-4 h-[600px] w-full'}`}
           >
             {view === "graph" ? (
-              <AgentGraph logs={logs} isRunning={isRunning} isFullScreen={false} isLiveMode={isRunning} isPaused={isPaused} />
+              <DashboardAgentWorkflow isRunning={isRunning} needsApproval={isPaused} />
             ) : (
               <TerminalLog logs={logs} isRunning={isRunning} />
             )}
@@ -843,13 +806,13 @@ export default function Dashboard() {
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             className="fixed bottom-8 right-8 z-50"
           >
-            <div className="bg-brand-emerald/10 border border-brand-emerald/30 px-6 py-4 rounded-2xl shadow-[0_10px_40px_rgba(16,185,129,0.2)] flex items-center gap-4 backdrop-blur-xl">
+            <div className="bg-slate-900/95 border border-brand-emerald/50 px-6 py-4 rounded-2xl shadow-[0_10px_40px_rgba(16,185,129,0.3)] flex items-center gap-4 backdrop-blur-xl">
               <div className="p-2 bg-brand-emerald/20 rounded-full">
                 <CheckCircle className="text-brand-emerald" size={24} />
               </div>
               <div>
                 <h4 className="text-white font-bold text-sm tracking-wide">Workflow Completed</h4>
-                <p className="text-brand-emerald/80 text-xs mt-0.5 font-medium">All tasks executed successfully</p>
+                <p className="text-brand-emerald/90 text-xs mt-0.5 font-medium">All tasks executed successfully</p>
               </div>
             </div>
           </motion.div>
@@ -865,19 +828,19 @@ export default function Dashboard() {
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             className="fixed bottom-8 right-8 z-50"
           >
-            <div className="bg-brand-orange/10 border border-brand-orange/30 px-6 py-4 rounded-2xl shadow-[0_10px_40px_rgba(249,115,22,0.2)] flex items-start gap-4 backdrop-blur-xl max-w-sm">
-              <div className="p-2 bg-brand-orange/20 rounded-full mt-1">
-                <AlertTriangle className="text-brand-orange" size={24} />
+            <div className="bg-slate-900/95 border border-brand-emerald/50 px-6 py-4 rounded-2xl shadow-[0_10px_40px_rgba(16,185,129,0.3)] flex items-start gap-4 backdrop-blur-xl max-w-sm">
+              <div className="p-2 bg-brand-emerald/20 rounded-full mt-1">
+                <CheckCircle className="text-brand-emerald" size={24} />
               </div>
               <div className="flex-1">
                 <h4 className="text-white font-bold text-sm tracking-wide">Request Successfully Submitted!</h4>
-                <p className="text-slate-300 text-xs mt-1.5 leading-relaxed">
+                <p className="text-slate-200 text-xs mt-1.5 leading-relaxed">
                   Your request has been forwarded to the Product Manager for approval. You will be notified once it is reviewed.
                 </p>
-                <div className="mt-3 flex justify-end">
+                <div className="mt-4 flex justify-end">
                   <button 
                     onClick={() => setShowPendingPopup(false)}
-                    className="bg-brand-orange/20 hover:bg-brand-orange/30 text-brand-orange px-4 py-1.5 rounded-lg text-xs font-bold transition-colors"
+                    className="bg-brand-emerald hover:bg-brand-emerald/80 text-white px-5 py-2 rounded-lg text-xs font-bold transition-all shadow-lg shadow-brand-emerald/20"
                   >
                     Got it
                   </button>

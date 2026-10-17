@@ -29,10 +29,15 @@ export default function ApprovalsPage() {
   };
 
   useEffect(() => {
-    fetchApprovals();
-    // Poll every 3 seconds for hackathon demo dynamism
-    const interval = setInterval(fetchApprovals, 3000);
-    return () => clearInterval(interval);
+    let active = true;
+    const poll = async () => {
+      while (active) {
+        await fetchApprovals();
+        await new Promise(r => setTimeout(r, 3000));
+      }
+    };
+    poll();
+    return () => { active = false; };
   }, []);
 
   const handleAction = async (threadId: string, approved: boolean) => {

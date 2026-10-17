@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Workflow, Plus, Play, Pause, FileEdit, Brain, DollarSign, MessageSquare, Database, Mail, Users, Filter, Search } from "lucide-react";
-import { AgentGraph } from "../../components/AgentGraph";
+import { WorkflowBuilderDemo } from "../../components/WorkflowBuilderDemo";
 import { motion } from "framer-motion";
 import { cn } from "../../lib/utils";
 
@@ -170,7 +170,7 @@ export default function WorkflowsPage() {
         </div>
 
         {/* Right Area: Interactive Canvas */}
-        <div className="flex-1 luxury-card bg-[#131b2f] overflow-hidden flex flex-col relative">
+        <div className="flex-1 luxury-card bg-[#131b2f] overflow-y-auto overflow-x-hidden flex flex-col relative custom-scrollbar">
           <div className="px-6 py-4 border-b border-white/5 bg-[#1c263f] flex items-center justify-between shrink-0 shadow-inner">
             <div>
               <h2 className="text-base font-semibold tracking-tight text-white flex items-center gap-2 mb-0.5">
@@ -204,7 +204,7 @@ export default function WorkflowsPage() {
           
           <div className="flex-1 relative">
             {activeTab === "Enterprise Architecture Pipeline" ? (
-              <AgentGraph logs={logs.length > 0 ? logs : ["[SYSTEM] Ready to execute. Click 'Run Demo' to start."]} isRunning={isRunning} isFullScreen={true} isLiveMode={isRunning} />
+              <WorkflowBuilderDemo />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center flex-col text-slate-400 gap-4">
                 <Workflow size={48} className="opacity-20" />

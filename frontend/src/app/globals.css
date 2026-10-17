@@ -4,42 +4,42 @@
 
 @layer base {
   :root {
-    /* Obsidian & Crimson Theme */
-    --background: 0 0% 3%;        /* Obsidian Black #080808 */
-    --foreground: 0 0% 98%;       /* Off-white */
+    /* Enterprise AI Copilot Theme */
+    --background: 222.2 84% 4.9%; /* Slate Dark #0F172A equivalent roughly, using HSL for deep navy/slate */
+    --foreground: 210 40% 98%;    /* Off-white */
     
-    --card: 0 0% 6%;              /* Dark Charcoal #0f0f0f */
-    --card-foreground: 0 0% 98%;
+    --card: 222 47% 11%;          /* Slate Card #1E293B ish */
+    --card-foreground: 210 40% 98%;
     
-    --popover: 0 0% 6%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
     
-    --primary: 348 83% 47%;       /* Ruby Red #dc143c */
-    --primary-foreground: 0 0% 100%;
+    --primary: 217 91% 60%;       /* Electric Blue #3B82F6 */
+    --primary-foreground: 210 40% 98%;
     
-    --secondary: 43 100% 50%;     /* Amber / Gold #ffbf00 */
-    --secondary-foreground: 0 0% 10%;
+    --secondary: 271 91% 65%;     /* Neon Purple #A855F7 */
+    --secondary-foreground: 210 40% 98%;
     
-    --muted: 0 0% 15%;            /* Muted Grey */
-    --muted-foreground: 0 0% 65%;
+    --muted: 217.2 32.6% 17.5%;   /* Muted Slate */
+    --muted-foreground: 215 20.2% 65.1%;
     
-    --accent: 348 83% 47%;        /* Crimson Accent */
-    --accent-foreground: 0 0% 100%;
+    --accent: 217 91% 60%;        /* Electric Blue Accent */
+    --accent-foreground: 210 40% 98%;
     
-    --accent-purple: #e11d48;     /* Re-mapped to Rose */
-    --accent-emerald: #10b981;    /* Keep emerald for success states */
+    --accent-purple: #A855F7;     
+    --accent-emerald: #10b981;    
     --accent-danger: #ef4444;
-    --accent-cyan: #fbbf24;       /* Re-mapped to Amber */
+    --accent-cyan: #38bdf8;       
     
-    --text-secondary: #a1a1aa;
-    --text-muted: #71717a;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
     
-    --destructive: 0 84% 60%;
+    --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
     
-    --border: 0 0% 15%;
-    --input: 0 0% 10%;
-    --ring: 348 83% 47%;          /* Crimson Ring */
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 217 91% 60%;          /* Blue Ring */
     
     --radius: 20px;
   }
@@ -61,8 +61,8 @@
     background-image: 
       linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
       linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-      radial-gradient(circle at 15% 50%, rgba(220, 20, 60, 0.06) 0%, transparent 40%),
-      radial-gradient(circle at 85% 30%, rgba(255, 191, 0, 0.04) 0%, transparent 40%);
+      radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
+      radial-gradient(circle at 85% 30%, rgba(168, 85, 247, 0.06) 0%, transparent 40%);
     background-size: 30px 30px, 30px 30px, 100% 100%, 100% 100%;
     background-position: center center;
     background-attachment: fixed;
@@ -76,7 +76,7 @@
   }
   
   .luxury-card-hover {
-    @apply hover:border-primary/40 hover:bg-card/60 hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_0_40px_rgba(220,20,60,0.25)] hover:-translate-y-1.5;
+    @apply hover:border-primary/40 hover:bg-card/60 hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_0_40px_rgba(59,130,246,0.25)] hover:-translate-y-1.5;
   }
 
   .glass-panel {
@@ -84,11 +84,11 @@
   }
   
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-rose-500 via-red-600 to-amber-500 bg-[length:200%_auto] animate-[gradient_4s_linear_infinite];
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 bg-[length:200%_auto] animate-[gradient_4s_linear_infinite];
   }
 
   .text-gradient-purple {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 bg-[length:200%_auto] animate-[gradient_4s_linear_infinite];
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-fuchsia-500 to-pink-500 bg-[length:200%_auto] animate-[gradient_4s_linear_infinite];
   }
 
   @keyframes gradient {
@@ -102,9 +102,9 @@
   }
   
   @keyframes ring-pulse {
-    0% { box-shadow: 0 0 0 0 rgba(220, 20, 60, 0.4); }
-    70% { box-shadow: 0 0 0 10px rgba(220, 20, 60, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(220, 20, 60, 0); }
+    0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
   }
 
   /* Custom Glow Buttons */
@@ -112,7 +112,7 @@
     @apply relative overflow-hidden bg-primary/10 text-primary border border-primary/30 rounded-full px-6 py-2 font-medium transition-all duration-300;
   }
   .btn-glow:hover {
-    @apply bg-primary/20 border-primary/60 shadow-[0_0_20px_rgba(220,20,60,0.4)];
+    @apply bg-primary/20 border-primary/60 shadow-[0_0_20px_rgba(59,130,246,0.4)];
   }
 }
 

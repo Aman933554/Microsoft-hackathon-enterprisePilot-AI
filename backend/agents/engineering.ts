@@ -167,4 +167,29 @@ export class EngineeringAgent {
       }
     };
   }
+
+  async generateBoilerplateCode(proposal: any): Promise<Record<string, string>> {
+    console.log(`[ENGINEERING AGENT] Generating boilerplate code for ${proposal.title}...`);
+    
+    // In a real production system, this could invoke an LLM to generate code dynamically based on the proposal.
+    // For this demo, we generate a high-quality boilerplate based on keywords in the title/description.
+    
+    const files: Record<string, string> = {};
+    const title = proposal.title.toLowerCase();
+
+    if (title.includes("web") || title.includes("commerce")) {
+      files["src/app/page.tsx"] = `import React from 'react';\n\nexport default function Home() {\n  return (\n    <div className="min-h-screen bg-black text-white p-8">\n      <h1 className="text-4xl font-bold">${proposal.title}</h1>\n      <p className="mt-4 text-slate-400">Welcome to the new platform.</p>\n      <button className="mt-6 bg-blue-600 px-6 py-2 rounded-lg font-bold">Get Started</button>\n    </div>\n  );\n}`;
+      files["package.json"] = `{\n  "name": "nextjs-boilerplate",\n  "version": "1.0.0",\n  "scripts": {\n    "dev": "next dev",\n    "build": "next build",\n    "start": "next start"\n  },\n  "dependencies": {\n    "next": "latest",\n    "react": "latest",\n    "react-dom": "latest",\n    "tailwindcss": "latest"\n  }\n}`;
+    } else if (title.includes("app") || title.includes("mobile")) {
+      files["App.tsx"] = `import React from 'react';\nimport { SafeAreaView, Text, View } from 'react-native';\n\nexport default function App() {\n  return (\n    <SafeAreaView style={{ flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' }}>\n      <Text style={{ color: '#fff', fontSize: 24, fontWeight: 'bold' }}>${proposal.title}</Text>\n    </SafeAreaView>\n  );\n}`;
+      files["package.json"] = `{\n  "name": "react-native-app",\n  "version": "1.0.0",\n  "dependencies": {\n    "react": "18.2.0",\n    "react-native": "0.72.6"\n  }\n}`;
+    } else {
+      files["src/index.ts"] = `console.log("Starting service: ${proposal.title}");\n\nexport function main() {\n  // Initialization logic for ${proposal.title}\n  console.log("Service running on port 3000");\n}\n\nmain();`;
+      files["package.json"] = `{\n  "name": "node-service",\n  "version": "1.0.0",\n  "scripts": {\n    "start": "ts-node src/index.ts"\n  },\n  "dependencies": {\n    "typescript": "^5.0.0",\n    "ts-node": "^10.9.1"\n  }\n}`;
+    }
+
+    files["README.md"] = `# ${proposal.title}\n\n${proposal.description}\n\n## Setup\nRun \`npm install\` followed by \`npm start\` or \`npm run dev\`.`;
+
+    return files;
+  }
 }

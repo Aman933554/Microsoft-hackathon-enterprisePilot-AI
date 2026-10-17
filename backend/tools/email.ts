@@ -87,7 +87,7 @@ export async function sendApprovalEmail(budget: number, feature: string, threadI
     console.error("[EMAIL] Error sending email:", error);
   }
 }
-export async function sendNotificationEmail(toEmail: string, subject: string, textBody: string) {
+export async function sendNotificationEmail(toEmail: string, subject: string, textBody: string, icsContent?: string) {
   try {
     if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
       console.log("[EMAIL] SMTP not configured. Skipping notification email to", toEmail);
@@ -102,12 +102,22 @@ export async function sendNotificationEmail(toEmail: string, subject: string, te
       },
     });
 
-    await transporter.sendMail({
+    const mailOptions: any = {
       from: '"EnterprisePilot AI" <no-reply@enterprisepilot.ai>',
       to: toEmail,
       subject: subject,
       text: textBody,
-    });
+    };
+
+    if (icsContent) {
+      mailOptions.icalEvent = {
+        filename: 'invite.ics',
+        method: 'request',
+        content: icsContent
+      };
+    }
+
+    await transporter.sendMail(mailOptions);
     console.log(`[SYSTEM] 📧 Notification email sent to ${toEmail}`);
   } catch (error) {
     console.error("[EMAIL] Error sending notification email:", error);

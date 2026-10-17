@@ -6,7 +6,7 @@ export const maxDuration = 300; // Allow Vercel/Next to run this for up to 5 min
 export const dynamic = 'force-dynamic';
 export async function POST(req: Request) {
   try {
-    const { goal, maxBudget } = await req.json();
+    const { goal, maxBudget, userEmail } = await req.json();
     
     // Auto-evaluate and decide final budget
     const evaluation = evaluateBudget(
@@ -16,7 +16,8 @@ export async function POST(req: Request) {
 
     const result = await runDemo(
       goal || "Build a new scalable messaging queue for microservices.", 
-      evaluation.finalDecidedBudget
+      evaluation.finalDecidedBudget,
+      userEmail
     );
     
     // Inject the budget evaluator reasoning as a system log so frontend can parse it

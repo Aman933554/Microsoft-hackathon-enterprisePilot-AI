@@ -4,7 +4,7 @@ import { prisma } from "../frontend/src/lib/prisma";
 export const threadStatuses: Record<string, { resolved: boolean; approved?: boolean; logs?: string[] }> = (global as any).__threadStatuses || {};
 (global as any).__threadStatuses = threadStatuses;
 
-export async function runDemo(goal: string, maxBudget: number) {
+export async function runDemo(goal: string, maxBudget: number, userEmail?: string) {
   const logs: string[] = [];
   
   // Intercept console.log
@@ -35,7 +35,7 @@ export async function runDemo(goal: string, maxBudget: number) {
     console.log(`[TRIGGER] New Goal: ${goal}\n`);
 
     await orchestratorApp.invoke(
-      { goal, maxBudget },
+      { goal, maxBudget, userEmail },
       threadConfig
     );
 

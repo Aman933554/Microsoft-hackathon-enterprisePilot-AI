@@ -4,26 +4,32 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { GeistSans } from "geist/font/sans";
 import Link from "next/link";
-import { SignInButton, SignUpButton, useAuth, useSignIn, useSignUp } from "@clerk/nextjs";
+import { SignInButton, SignUpButton, useAuth, useSignIn, useSignUp, useClerk } from "@clerk/nextjs";
 import { motion } from "framer-motion";
 
 export default function LoginPage() {
   const router = useRouter();
   const { isSignedIn, isLoaded } = useAuth();
-  const { isLoaded: isSignInLoaded, signIn, setActive: setSignInActive } = useSignIn();
-  const { isLoaded: isSignUpLoaded, signUp, setActive: setSignUpActive } = useSignUp();
+  const { isLoaded: isSignInLoaded, signIn } = useSignIn();
+  const { isLoaded: isSignUpLoaded, signUp } = useSignUp();
+  const { setActive } = useClerk();
   
   const [isLogin, setIsLogin] = useState(true);
   
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [orgId, setOrgId] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   
   const [pendingVerification, setPendingVerification] = useState(false);
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [debugMsg, setDebugMsg] = useState("");
+
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [forgotPasswordStep, setForgotPasswordStep] = useState(0); // 0: enter email, 1: enter code and new password
+  const [newPassword, setNewPassword] = useState("");
 
   useEffect(() => {
     if (isLoaded && isSignedIn) {
@@ -38,34 +44,49 @@ export default function LoginPage() {
     setIsLoading(true);
 
     if (isLogin) {
+      if (!isSignInLoaded || !signIn) {
+        setError("Authentication service is initializing, please wait a moment.");
+        setIsLoading(false);
+        return;
+      }
+      if (!email.trim() || !password) {
+        setError("Please enter both email and password.");
+        setIsLoading(false);
+        return;
+      }
       setDebugMsg("Mode: Login. Calling signIn.create...");
       try {
         setDebugMsg("Calling signIn.create...");
         const result = await signIn.create({
-          identifier: email,
+          identifier: email.trim(),
           password,
         });
 
-        if (result.status === "complete") {
+        const status = result?.status || signIn.status;
+        const sessionId = result?.createdSessionId || signIn.createdSessionId;
+
+        if (status === "complete") {
           setDebugMsg("SignIn complete. Setting active session...");
-          await setSignInActive({ session: result.createdSessionId });
+          await setActive({ session: sessionId });
           router.push("/dashboard");
         } else {
           setDebugMsg("SignIn incomplete: " + JSON.stringify(result));
-          console.log("SignIn Result:", result);
+          console.log("SignIn Result:", result, "signIn obj:", signIn);
           
           // Check if it's an error object returned directly
-          if (result.error || result.errors) {
-            const errList = result.errors || [result.error];
-            const firstErr = errList[0];
+          if (result && (result as any).error) {
+            const actualErrors = (result as any).error.errors || [];
+            const firstErr = actualErrors[0] || (result as any).error;
             
             if (firstErr.code === "strategy_for_user_invalid") {
-              setError("This account doesn't use a password. Did you sign up with Google?");
+              setError("This account is linked to Google. Please use the Google button to log in. Password login is disabled for social accounts.");
+            } else if (firstErr.code === "form_password_incorrect") {
+              setError("Incorrect password. If you just reset it, please make sure you typed it correctly.");
             } else {
               setError(firstErr.longMessage || firstErr.message || "Login incomplete. Please try again.");
             }
           } else {
-            setError("Login incomplete. Additional verification might be required.");
+            setError(`Login incomplete. Status: ${status}. Additional verification might be required.`);
           }
           
           setIsLoading(false);
@@ -77,23 +98,71 @@ export default function LoginPage() {
         setIsLoading(false);
       }
     } else {
+      if (!isSignUpLoaded || !signUp) {
+        setError("Authentication service is initializing, please wait a moment.");
+        setIsLoading(false);
+        return;
+      }
+      if (!email.trim() || !password || !fullName.trim()) {
+        setError("Please enter your full name, email, and password.");
+        setIsLoading(false);
+        return;
+      }
       setDebugMsg("Mode: Register. Calling signUp.create...");
       try {
         setDebugMsg("Calling signUp.create...");
-        await signUp.create({
-          emailAddress: email,
+        
+        const nameParts = fullName.trim().split(" ");
+        const firstName = nameParts[0] || "";
+        const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "";
+
+        const result = await signUp.create({
+          firstName,
+          lastName,
+          emailAddress: email.trim(),
           password,
         });
+        
+        // Handle Clerk Future API where errors are returned instead of thrown
+        if (result && (result as any).error) {
+          throw (result as any).error;
+        }
 
-        setDebugMsg("Calling prepareVerification...");
-        await signUp.prepareVerification({ strategy: "email_code" });
+        setDebugMsg("Calling prepareEmailAddressVerification...");
+        console.log("AVAILABLE METHODS ON signUp:", Object.keys(signUp));
+        console.log("signUp prototype methods:", Object.getOwnPropertyNames(Object.getPrototypeOf(signUp)));
+        
+        let sendResult;
+        if (result && typeof (result as any).sendEmailCode === 'function') {
+          sendResult = await (result as any).sendEmailCode();
+        } else if (typeof signUp.sendEmailCode === 'function') {
+          sendResult = await signUp.sendEmailCode();
+        } else if (typeof signUp.prepareEmailAddressVerification === 'function') {
+          sendResult = await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+        } else if (typeof signUp.prepareVerification === 'function') {
+          sendResult = await signUp.prepareVerification({ strategy: "email_code" });
+        } else {
+          throw new Error("No verification method found! Please make sure Clerk SDK is correctly configured.");
+        }
+        
+        // Check if sendEmailCode returned an error
+        if (sendResult && (sendResult as any).error) {
+          throw (sendResult as any).error;
+        }
+
         setDebugMsg("Verification prepared. Setting pendingVerification=true.");
         setPendingVerification(true);
         setIsLoading(false);
       } catch (err: any) {
         setDebugMsg("SignUp error caught: " + (err.errors?.[0]?.longMessage || err.message));
         console.error("SignUp Error:", err);
-        setError(err.errors?.[0]?.longMessage || err.message || "Error signing up");
+        
+        let errorMessage = err.errors?.[0]?.longMessage || err.message || "Error signing up";
+        if (err.errors?.[0]?.code === 'form_identifier_exists' || errorMessage.includes('email address is taken')) {
+          errorMessage = "You already have an account with this email. Please login instead.";
+        }
+        
+        setError(errorMessage);
         setIsLoading(false);
       }
     }
@@ -105,17 +174,108 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const completeSignUp = await signUp.attemptVerification({ strategy: "email_code", code });
-      if (completeSignUp.status === 'complete') {
-        await setSignUpActive({ session: completeSignUp.createdSessionId });
+      console.log("AVAILABLE METHODS ON signUp in Verify:", Object.keys(signUp));
+      console.log("signUp prototype methods in Verify:", Object.getOwnPropertyNames(Object.getPrototypeOf(signUp)));
+
+      let completeSignUp;
+      if (typeof signUp.verifyEmailCode === 'function') {
+        completeSignUp = await signUp.verifyEmailCode({ code });
+      } else if (typeof signUp.attemptEmailAddressVerification === 'function') {
+        completeSignUp = await signUp.attemptEmailAddressVerification({ code });
+      } else if (typeof signUp.attemptVerification === 'function') {
+        completeSignUp = await signUp.attemptVerification({ strategy: "email_code", code });
+      } else {
+        throw new Error("No attemptVerification method found on signUp object!");
+      }
+      
+      const status = completeSignUp?.status || signUp.status;
+      const createdSessionId = completeSignUp?.createdSessionId || signUp.createdSessionId;
+
+      if (status === 'complete') {
+        await setActive({ session: createdSessionId });
         router.push("/dashboard");
       } else {
-        console.log("Verify Result:", completeSignUp);
-        setIsLoading(false);
+        setDebugMsg("Verify incomplete: " + JSON.stringify(completeSignUp || signUp));
+        setError("Verification incomplete. Status: " + status);
       }
     } catch (err: any) {
       console.error("Verify Error:", err);
       setError(err.errors?.[0]?.longMessage || err.message || "Error verifying code");
+      setIsLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
+
+    try {
+      if (forgotPasswordStep === 0) {
+        // Step 1: Request reset code
+        await signIn.create({
+          strategy: 'reset_password_email_code',
+          identifier: email,
+        });
+        setForgotPasswordStep(1);
+        setError(""); // Clear any previous errors
+      } else {
+        // Step 2: Submit code and new password
+        let result;
+        let methodUsed = '';
+        
+        try {
+          if (typeof signIn.verifyResetPasswordEmailCode === 'function' && typeof signIn.submitResetPassword === 'function') {
+            methodUsed = 'verify+submit (2-step)';
+            // First verify the code
+            const verifyResult = await signIn.verifyResetPasswordEmailCode({ code });
+            
+            // Then submit the new password
+            result = await signIn.submitResetPassword({ password: newPassword, signOutOfOtherSessions: true });
+          } else if (typeof signIn.submitResetPassword === 'function') {
+            methodUsed = 'submitResetPassword';
+            result = await signIn.submitResetPassword({ code, password: newPassword, signOutOfOtherSessions: true });
+          } else if (typeof signIn.attemptFirstFactor === 'function') {
+            methodUsed = 'attemptFirstFactor';
+            result = await signIn.attemptFirstFactor({ strategy: 'reset_password_email_code', code, password: newPassword, signOutOfOtherSessions: true });
+          } else {
+            throw new Error("No known reset method found on signIn");
+          }
+        } catch (e: any) {
+          console.log("Error in " + methodUsed + ": ", e);
+          // Fallback if 2-step fails, maybe verify takes both?
+          if (methodUsed === 'verify+submit (2-step)') {
+            try {
+              methodUsed = 'verifyResetPasswordEmailCode (combined)';
+              result = await signIn.verifyResetPasswordEmailCode({ code, password: newPassword });
+            } catch (fallbackError: any) {
+              throw fallbackError;
+            }
+          } else {
+            throw e;
+          }
+        }
+
+        // Sometimes the result is undefined in newer SDKs, so we check the signIn object itself
+        const finalStatus = result?.status || signIn.status;
+        const sessionId = result?.createdSessionId || signIn.createdSessionId;
+
+        if (finalStatus === 'complete') {
+          if (typeof signIn.finalize === 'function') {
+            await signIn.finalize();
+            router.push("/dashboard");
+          } else {
+            await setActive({ session: sessionId });
+            router.push("/dashboard");
+          }
+        } else {
+          setError("Password reset incomplete. Method: " + methodUsed + ", Status: " + finalStatus);
+        }
+      }
+    } catch (err: any) {
+      console.error("Forgot Password Error:", err);
+      setError(err.errors?.[0]?.longMessage || err.message || "Error resetting password");
+    } finally {
       setIsLoading(false);
     }
   };
@@ -228,10 +388,12 @@ export default function LoginPage() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[100px] pointer-events-none -z-10" />
 
         <div className="absolute top-8 right-8 text-sm text-slate-500 z-20">
-          {isLogin ? (
-            <>Don't have an account? <button onClick={() => setIsLogin(false)} className="text-primary hover:text-primary/80 transition-colors font-medium">Create Account</button></>
-          ) : (
-            <>Already have an account? <button onClick={() => setIsLogin(true)} className="text-primary hover:text-primary/80 transition-colors font-medium">Login</button></>
+          {!isForgotPassword && (
+            isLogin ? (
+              <>Don't have an account? <button onClick={() => setIsLogin(false)} className="text-primary hover:text-primary/80 transition-colors font-medium">Create Account</button></>
+            ) : (
+              <>Already have an account? <button onClick={() => setIsLogin(true)} className="text-primary hover:text-primary/80 transition-colors font-medium">Login</button></>
+            )
           )}
         </div>
         
@@ -263,8 +425,8 @@ export default function LoginPage() {
                 </svg>
               )}
             </div>
-            <h2 className="text-3xl font-bold text-white tracking-tight">{isLogin ? "Welcome Back" : "Create Account"}</h2>
-            <p className="text-slate-400 text-sm mt-2 font-medium">{isLogin ? "Sign in to your enterprise account" : "Join your enterprise workspace"}</p>
+            <h2 className="text-3xl font-bold text-white tracking-tight">{isForgotPassword ? "Reset Password" : isLogin ? "Welcome Back" : "Create Account"}</h2>
+            <p className="text-slate-400 text-sm mt-2 font-medium">{isForgotPassword ? "Enter your email to reset your password" : isLogin ? "Sign in to your enterprise account" : "Join your enterprise workspace"}</p>
           </div>
 
           {pendingVerification ? (
@@ -290,9 +452,124 @@ export default function LoginPage() {
                 {isLoading ? "Please wait..." : "Verify Email \u2192"}
               </button>
             </form>
+          ) : isForgotPassword ? (
+            <form onSubmit={handleForgotPassword} className="space-y-5">
+              {error && <div className="text-red-500 text-sm bg-red-500/10 p-3 rounded-lg border border-red-500/20">{error}</div>}
+              
+              {forgotPasswordStep === 0 ? (
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Work Email</label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <svg className="h-5 w-5 text-slate-500 group-focus-within:text-primary transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <input 
+                      type="email" 
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      className="w-full pl-11 pr-4 py-3.5 bg-black/40 border border-white/5 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all shadow-inner" 
+                      placeholder="name@company.com" 
+                      required
+                    />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">Verification Code</label>
+                    <div className="relative group">
+                      <input 
+                        type="text" 
+                        value={code}
+                        onChange={e => setCode(e.target.value)}
+                        className="w-full px-4 py-3.5 bg-black/40 border border-white/5 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all shadow-inner" 
+                        placeholder="Enter the 6-digit code sent to your email" 
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">New Password</label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <svg className="h-5 w-5 text-slate-500 group-focus-within:text-primary transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                      </div>
+                      <input 
+                        type={showPassword ? "text" : "password"} 
+                        value={newPassword}
+                        onChange={e => setNewPassword(e.target.value)}
+                        className="w-full pl-11 pr-10 py-3.5 bg-black/40 border border-white/5 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all shadow-inner" 
+                        placeholder="Enter new password" 
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-500 hover:text-white focus:outline-none transition-colors"
+                      >
+                        {showPassword ? (
+                          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                          </svg>
+                        ) : (
+                          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+              
+              <div className="flex justify-between items-center text-sm pt-2">
+                <button 
+                  type="button" 
+                  onClick={() => { setIsForgotPassword(false); setForgotPasswordStep(0); setError(""); }}
+                  className="text-slate-400 hover:text-white transition-colors"
+                >
+                  &larr; Back to login
+                </button>
+              </div>
+
+              <button 
+                type="submit" 
+                disabled={isLoading}
+                className={`w-full flex justify-center items-center py-3.5 px-4 rounded-xl shadow-lg shadow-primary/20 text-sm font-bold text-white transition-all transform mt-6 border border-white/10 ${isLoading ? 'bg-primary/50 cursor-not-allowed' : 'bg-primary hover:bg-primary/90 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:ring-offset-[#080808]'}`}
+              >
+                {isLoading ? "Please wait..." : forgotPasswordStep === 0 ? "Send Reset Code \u2192" : "Reset Password \u2192"}
+              </button>
+            </form>
           ) : (
             <form onSubmit={handleAuth} className="space-y-5">
               {error && <div className="text-red-500 text-sm bg-red-500/10 p-3 rounded-lg border border-red-500/20">{error}</div>}
+              
+              {!isLogin && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Full Name</label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <svg className="h-5 w-5 text-slate-500 group-focus-within:text-primary transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                    <input 
+                      type="text" 
+                      value={fullName}
+                      onChange={e => setFullName(e.target.value)}
+                      className="w-full pl-11 pr-4 py-3.5 bg-black/40 border border-white/5 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all shadow-inner" 
+                      placeholder="John Doe" 
+                      required={!isLogin}
+                    />
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">Work Email</label>
                 <div className="relative group">
@@ -320,42 +597,56 @@ export default function LoginPage() {
                     </svg>
                   </div>
                   <input 
-                    type="password" 
+                    type={showPassword ? "text" : "password"} 
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     className="w-full pl-11 pr-10 py-3.5 bg-black/40 border border-white/5 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all shadow-inner" 
                     placeholder="Enter your password" 
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-500 hover:text-white focus:outline-none transition-colors"
+                  >
+                    {showPassword ? (
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                      </svg>
+                    ) : (
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    )}
+                  </button>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Organization ID</label>
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-slate-500 group-focus-within:text-primary transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
+
+              {isLogin ? (
+                <div className="flex items-center justify-between pt-1">
+                  <div className="flex items-center">
+                    <input type="checkbox" className="h-4 w-4 text-primary focus:ring-primary border-slate-700 rounded bg-black/40" />
+                    <label className="ml-2 block text-sm text-slate-400">Remember me</label>
                   </div>
-                  <input 
-                    type="text" 
-                    value={orgId}
-                    onChange={e => setOrgId(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3.5 bg-black/40 border border-white/5 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all shadow-inner" 
-                    placeholder="e.g. corp-nexus-99" 
-                  />
+                  <div className="text-sm">
+                    <button 
+                      type="button" 
+                      onClick={(e) => { e.preventDefault(); setIsForgotPassword(true); setError(""); setForgotPasswordStep(0); }} 
+                      className="font-medium text-primary hover:text-primary/80 transition-colors"
+                    >
+                      Forgot Password?
+                    </button>
+                  </div>
                 </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-1">
-                <div className="flex items-center">
-                  <input type="checkbox" className="h-4 w-4 text-primary focus:ring-primary border-slate-700 rounded bg-black/40" />
-                  <label className="ml-2 block text-sm text-slate-400">Remember me</label>
+              ) : (
+                <div className="flex items-center pt-1">
+                  <input type="checkbox" required className="h-4 w-4 text-primary focus:ring-primary border-slate-700 rounded bg-black/40" />
+                  <label className="ml-2 block text-sm text-slate-400">
+                    I agree to the <a href="#" className="text-primary hover:underline">Terms of Service</a> & <a href="#" className="text-primary hover:underline">Privacy Policy</a>
+                  </label>
                 </div>
-                <div className="text-sm">
-                  <a href="#" className="font-medium text-primary hover:text-primary/80 transition-colors">Forgot Password?</a>
-                </div>
-              </div>
+              )}
 
               {/* Clerk Bot Protection CAPTCHA element */}
               <div id="clerk-captcha"></div>
@@ -367,12 +658,6 @@ export default function LoginPage() {
               >
                 {isLoading ? "Please wait..." : (isLogin ? "Login \u2192" : "Create Account \u2192")}
               </button>
-              
-              {debugMsg && (
-                <div className="mt-4 p-3 bg-slate-900 border border-slate-700 text-xs text-slate-300 rounded font-mono break-words">
-                  DEBUG: {debugMsg}
-                </div>
-              )}
             </form>
           )}
 

@@ -4,55 +4,44 @@ import React, { useState, useEffect } from "react";
 import { BarChart2, TrendingUp, DollarSign, Activity, Zap, Cpu, Network } from "lucide-react";
 
 export default function AnalyticsPage() {
-  const [workflows, setWorkflows] = useState<any[]>([]);
-  const [pendingCount, setPendingCount] = useState(0);
+  const [metrics, setMetrics] = useState({
+    totalValueCreated: 0,
+    totalDecisions: 0,
+    humanInputCount: 0,
+    totalApiCost: 0,
+    totalTimeSavedHrs: 0,
+    totalWorkflows: 0
+  });
+  const [risk, setRisk] = useState({ low: 0, medium: 0, high: 0 });
+  const [chartData, setChartData] = useState<number[]>(new Array(12).fill(0));
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [resW, resA] = await Promise.all([
-          fetch("/api/workflows"),
-          fetch("/api/approvals")
-        ]);
-        const dataW = await resW.json();
-        const dataA = await resA.json();
-        if (dataW.success) setWorkflows(dataW.workflows || []);
-        if (dataA.success) setPendingCount(dataA.pendingApprovals?.length || 0);
-      } catch (e) {}
+        const res = await fetch("/api/analytics");
+        const data = await res.json();
+        if (data.success) {
+          setMetrics(data.metrics);
+          setRisk(data.risk);
+          setChartData(data.chartData);
+        }
+      } catch (e) {
+        console.error("Failed to fetch analytics:", e);
+      }
     };
     fetchData();
     const interval = setInterval(fetchData, 5000);
     return () => clearInterval(interval);
   }, []);
 
-  // Calculate dynamic stats on top of a realistic baseline for the demo
-  const baseValue = 4200000;
-  const liveValue = workflows.reduce((sum, w) => sum + (w.budgetSavings || (w.maxBudget * 0.15)), 0);
-  const totalValue = baseValue + liveValue;
+  // Calculate percentages for Risk Distribution
+  const totalRisk = risk.low + risk.medium + risk.high || 1; // Prevent division by zero
+  const lowRiskPct = Math.round((risk.low / totalRisk) * 100);
+  const medRiskPct = Math.round((risk.medium / totalRisk) * 100);
+  const highRiskPct = Math.round((risk.high / totalRisk) * 100);
 
-  const baseDecisions = 1402;
-  const totalDecisions = baseDecisions + (workflows.length * 3);
-  const humanInput = 142 + pendingCount;
-
-  const baseCost = 12450;
-  const totalCost = baseCost + (workflows.length * 8.8);
-
-  const baseTime = 840;
-  const totalTime = baseTime + (workflows.length * 4);
-
-  // Dynamic Chart (Inject live workflows into the last month)
-  const chartData = [60, 80, 45, 90, 75, 40, 85, 100, 65, 50, 70, Math.min(100, 95 + workflows.length)];
-
-  // Dynamic Risk Distribution
-  const total = workflows.length || 1;
-  let lowCount = workflows.filter(w => w.riskScore < 30).length;
-  let medCount = workflows.filter(w => w.riskScore >= 30 && w.riskScore <= 60).length;
-  let highCount = workflows.filter(w => w.riskScore > 60).length;
-
-  // Add baseline risk to prevent 0% rendering issues
-  const lowRisk = Math.round(((lowCount + 75) / (total + 100)) * 100);
-  const medRisk = Math.round(((medCount + 18) / (total + 100)) * 100);
-  const highRisk = Math.round(((highCount + 7) / (total + 100)) * 100);
+  // Determine max chart value for scaling (or use a sensible default if all 0)
+  const maxChartValue = Math.max(...chartData, 10);
 
   return (
     <div className="animate-in fade-in duration-500 pb-10 h-[calc(100vh-6rem)] flex flex-col p-8 overflow-y-auto custom-scrollbar">
@@ -83,8 +72,8 @@ export default function AnalyticsPage() {
             <div className="p-2 bg-emerald-500/20 rounded-lg text-emerald-400"><DollarSign size={20} /></div>
             <span className="text-slate-300 font-semibold text-sm uppercase tracking-wider">Total Value Created</span>
           </div>
-          <div className="text-4xl font-bold text-white mb-1">₹{(totalValue / 1000000).toFixed(2)}M</div>
-          <div className="text-emerald-400 text-xs font-bold">+12% vs last month</div>
+          <div className="text-4xl font-bold text-white mb-1">₹{metrics.totalValueCreated.toLocaleString()}</div>
+          <div className="text-emerald-400 text-xs font-bold">Actual live savings</div>
         </div>
 
         <div className="glass-panel p-6 rounded-2xl relative overflow-hidden group">
@@ -92,8 +81,8 @@ export default function AnalyticsPage() {
             <div className="p-2 bg-blue-500/20 rounded-lg text-blue-400"><Activity size={20} /></div>
             <span className="text-slate-300 font-semibold text-sm uppercase tracking-wider">Decisions Made</span>
           </div>
-          <div className="text-4xl font-bold text-white mb-1">{totalDecisions.toLocaleString()}</div>
-          <div className="text-blue-400 text-xs font-bold">{humanInput} requiring human input</div>
+          <div className="text-4xl font-bold text-white mb-1">{metrics.totalDecisions.toLocaleString()}</div>
+          <div className="text-blue-400 text-xs font-bold">{metrics.humanInputCount} requiring human input</div>
         </div>
 
         <div className="glass-panel p-6 rounded-2xl relative overflow-hidden group">
@@ -101,7 +90,7 @@ export default function AnalyticsPage() {
             <div className="p-2 bg-purple-500/20 rounded-lg text-purple-400"><Cpu size={20} /></div>
             <span className="text-slate-300 font-semibold text-sm uppercase tracking-wider">Agent API Cost</span>
           </div>
-          <div className="text-4xl font-bold text-white mb-1">₹{totalCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+          <div className="text-4xl font-bold text-white mb-1">₹{metrics.totalApiCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
           <div className="text-slate-400 text-xs font-medium">Avg ₹8.8 per workflow</div>
         </div>
 
@@ -110,7 +99,7 @@ export default function AnalyticsPage() {
             <div className="p-2 bg-yellow-500/20 rounded-lg text-yellow-400"><Zap size={20} /></div>
             <span className="text-slate-300 font-semibold text-sm uppercase tracking-wider">Time Saved</span>
           </div>
-          <div className="text-4xl font-bold text-white mb-1">{totalTime} hrs</div>
+          <div className="text-4xl font-bold text-white mb-1">{metrics.totalTimeSavedHrs} hrs</div>
           <div className="text-slate-400 text-xs font-medium">Equivalent to 5 full-time heads</div>
         </div>
       </div>
@@ -132,19 +121,19 @@ export default function AnalyticsPage() {
                 <div 
                   className="w-full rounded-t-sm relative transition-all duration-1000 ease-out group-hover:scale-y-105" 
                   style={{ 
-                    height: `${val}%`, 
-                    backgroundColor: i === chartData.length - 1 ? 'rgba(16, 185, 129, 0.4)' : 'rgba(59, 130, 246, 0.2)',
-                    boxShadow: i === chartData.length - 1 ? '0 0 20px rgba(16, 185, 129, 0.2)' : 'none',
-                    borderTop: `1px solid ${i === chartData.length - 1 ? 'rgba(16, 185, 129, 1)' : 'rgba(59, 130, 246, 0.5)'}`
+                    height: `${(val / maxChartValue) * 100}%`, 
+                    backgroundColor: i === new Date().getMonth() ? 'rgba(16, 185, 129, 0.4)' : 'rgba(59, 130, 246, 0.2)',
+                    boxShadow: i === new Date().getMonth() ? '0 0 20px rgba(16, 185, 129, 0.2)' : 'none',
+                    borderTop: `1px solid ${i === new Date().getMonth() ? 'rgba(16, 185, 129, 1)' : 'rgba(59, 130, 246, 0.5)'}`
                   }}>
                   {/* Neon top cap */}
-                  <div className={`absolute top-0 left-0 w-full h-1 ${i === chartData.length - 1 ? 'bg-emerald-400 animate-pulse' : 'bg-blue-400 opacity-50'}`}></div>
+                  <div className={`absolute top-0 left-0 w-full h-1 ${i === new Date().getMonth() ? 'bg-emerald-400 animate-pulse' : 'bg-blue-400 opacity-50'}`}></div>
                   
                   <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 text-xs font-bold text-white bg-slate-800 px-2 py-1 rounded-md border border-slate-700 transition-opacity whitespace-nowrap z-20">
-                    {val}k tokens
+                    {val} workflows
                   </div>
                 </div>
-                <span className={`text-[10px] font-bold uppercase ${i === chartData.length - 1 ? 'text-emerald-400' : 'text-slate-500'}`}>
+                <span className={`text-[10px] font-bold uppercase ${i === new Date().getMonth() ? 'text-emerald-400' : 'text-slate-500'}`}>
                   {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][i]}
                 </span>
               </div>
@@ -159,30 +148,30 @@ export default function AnalyticsPage() {
             <div className="flex flex-col gap-2">
               <div className="flex justify-between items-end">
                 <span className="text-emerald-400 font-bold text-sm">Low Risk (Autonomous)</span>
-                <span className="text-white font-bold">{lowRisk}%</span>
+                <span className="text-white font-bold">{lowRiskPct}%</span>
               </div>
               <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden">
-                <div className="h-full bg-emerald-500 rounded-full transition-all duration-1000" style={{ width: `${lowRisk}%` }}></div>
+                <div className="h-full bg-emerald-500 rounded-full transition-all duration-1000" style={{ width: `${lowRiskPct}%` }}></div>
               </div>
             </div>
             
             <div className="flex flex-col gap-2">
               <div className="flex justify-between items-end">
                 <span className="text-yellow-400 font-bold text-sm">Medium Risk (Monitored)</span>
-                <span className="text-white font-bold">{medRisk}%</span>
+                <span className="text-white font-bold">{medRiskPct}%</span>
               </div>
               <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden">
-                <div className="h-full bg-yellow-500 rounded-full transition-all duration-1000" style={{ width: `${medRisk}%` }}></div>
+                <div className="h-full bg-yellow-500 rounded-full transition-all duration-1000" style={{ width: `${medRiskPct}%` }}></div>
               </div>
             </div>
 
             <div className="flex flex-col gap-2">
               <div className="flex justify-between items-end">
                 <span className="text-red-400 font-bold text-sm">High Risk (Human Required)</span>
-                <span className="text-white font-bold">{highRisk}%</span>
+                <span className="text-white font-bold">{highRiskPct}%</span>
               </div>
               <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden">
-                <div className="h-full bg-red-500 rounded-full transition-all duration-1000" style={{ width: `${highRisk}%` }}></div>
+                <div className="h-full bg-red-500 rounded-full transition-all duration-1000" style={{ width: `${highRiskPct}%` }}></div>
               </div>
             </div>
           </div>

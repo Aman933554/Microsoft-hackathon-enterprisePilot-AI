@@ -7,3 +7,5 @@ build/
 *.log
 test-db-query.ts
 test-notion-dbs.ts
+test-github.ts
+frontend/test-clerk.ts
