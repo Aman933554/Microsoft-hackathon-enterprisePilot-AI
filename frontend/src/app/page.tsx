@@ -151,7 +151,7 @@ export default function LandingPage() {
           <div className="relative group w-full h-[500px] sm:h-[600px] flex justify-center lg:justify-end items-center">
              <div className="absolute w-[1000px] origin-center lg:origin-right scale-[0.35] sm:scale-[0.55] md:scale-[0.65] lg:scale-[0.55] xl:scale-[0.65]">
                 <div className="absolute -inset-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-3xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-                <div className="relative w-full z-10 pointer-events-none">
+                <div className="relative w-full z-10 pointer-events-auto">
                   <DashboardAgentWorkflow isRunning={true} />
                 </div>
              </div>

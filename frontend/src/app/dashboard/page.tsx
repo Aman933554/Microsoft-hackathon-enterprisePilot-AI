@@ -60,7 +60,7 @@ export default function Dashboard() {
   });
 
   const { user } = useUser();
-  const isManager = user?.primaryEmailAddress?.emailAddress === process.env.NEXT_PUBLIC_MANAGER_EMAIL || user?.primaryEmailAddress?.emailAddress === "sharmaaman9318411@gmail.com";
+  const isManager = true; // Always allow approval in dashboard demo
 
   useEffect(() => {
     const savedStateStr = localStorage.getItem("workflow_state");
@@ -486,7 +486,7 @@ export default function Dashboard() {
           </div>
 
           <div className="w-full mt-6">
-            <DashboardAgentWorkflow isRunning={isRunning} needsApproval={isPaused} />
+            <DashboardAgentWorkflow isRunning={isRunning} needsApproval={isPaused} logs={logs} />
           </div>
 
 
@@ -778,7 +778,7 @@ export default function Dashboard() {
             className={`transition-all duration-500 ${view === 'terminal' ? 'p-0 bg-transparent shadow-none' : 'glass-panel border-white/10 p-4 h-[600px] w-full'}`}
           >
             {view === "graph" ? (
-              <DashboardAgentWorkflow isRunning={isRunning} needsApproval={isPaused} />
+              <DashboardAgentWorkflow isRunning={isRunning} needsApproval={isPaused} logs={logs} />
             ) : (
               <TerminalLog logs={logs} isRunning={isRunning} />
             )}
