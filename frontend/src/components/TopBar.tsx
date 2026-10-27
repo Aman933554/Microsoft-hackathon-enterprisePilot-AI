@@ -95,9 +95,17 @@ export function TopBar({ isSidebarOpen, setIsSidebarOpen }: { isSidebarOpen?: bo
     setNotifications([]);
   };
 
+  const navigateTo = (url: string) => {
+    try {
+      router.push(url);
+    } catch {
+      window.location.href = url;
+    }
+  };
+
   const handleLaunch = () => {
     if (pathname !== "/") {
-      router.push("/?launch=true");
+      navigateTo("/?launch=true");
     } else {
       window.dispatchEvent(new CustomEvent("launch-campaign"));
     }
@@ -129,12 +137,12 @@ export function TopBar({ isSidebarOpen, setIsSidebarOpen }: { isSidebarOpen?: bo
 
     if (item.action === "launch") {
       if (pathname !== "/") {
-        router.push("/?launch=true");
+        navigateTo("/?launch=true");
       } else {
         window.dispatchEvent(new CustomEvent("launch-campaign"));
       }
     } else {
-      router.push(item.path);
+      navigateTo(item.path);
     }
   };
 

@@ -1,14 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { GeistSans } from "geist/font/sans";
 import Link from "next/link";
 import { SignInButton, SignUpButton, useAuth, useSignIn, useSignUp, useClerk } from "@clerk/nextjs";
 import { motion } from "framer-motion";
 
 export default function LoginPage() {
-  const router = useRouter();
   const { isSignedIn, isLoaded } = useAuth();
   const { signIn } = useSignIn();
   const { signUp } = useSignUp();
@@ -47,9 +45,9 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (isLoaded && isSignedIn) {
-      router.push("/dashboard");
+      window.location.replace("/dashboard");
     }
-  }, [isLoaded, isSignedIn, router]);
+  }, [isLoaded, isSignedIn]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,7 +93,7 @@ export default function LoginPage() {
         if (status === "complete") {
           setDebugMsg("SignIn complete. Setting active session...");
           await activeSetActive({ session: sessionId });
-          router.push("/dashboard");
+          window.location.replace("/dashboard");
         } else {
           setDebugMsg("SignIn incomplete: " + JSON.stringify(result));
           console.log("SignIn Result:", result, "signIn obj:", currentSignIn);
@@ -220,7 +218,7 @@ export default function LoginPage() {
 
       if (status === 'complete') {
         await activeSetActive({ session: createdSessionId });
-        router.push("/dashboard");
+        window.location.replace("/dashboard");
       } else {
         setDebugMsg("Verify incomplete: " + JSON.stringify(completeSignUp || currentSignUp));
         setError("Verification incomplete. Status: " + status);
@@ -317,10 +315,10 @@ export default function LoginPage() {
         if (finalStatus === 'complete') {
           if (typeof currentSignIn.finalize === 'function') {
             await currentSignIn.finalize();
-            router.push("/dashboard");
+            window.location.replace("/dashboard");
           } else {
             await activeSetActive({ session: sessionId });
-            router.push("/dashboard");
+            window.location.replace("/dashboard");
           }
         } else {
           setError("Password reset incomplete. Method: " + methodUsed + ", Status: " + finalStatus);
