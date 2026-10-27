@@ -106,34 +106,39 @@ export class EngineeringAgent {
     return response;
   }
 
-  private getFallbackProposal(goal: string, userBudget: number) {
-    const isBasic = userBudget < 50000;
+  private getFallbackProposal(goal: string = "", userBudget: number = 45000) {
+    const safeGoal = (goal || "").toString();
+    const safeBudget = typeof userBudget === 'number' && !isNaN(userBudget) ? userBudget : 45000;
+    const isBasic = safeBudget < 50000;
     
     let specificDescription = "";
     let specificTitle = "Enterprise Architecture Upgrade";
     
-    if (goal.includes("Website Development")) {
+    if (safeGoal.includes("Website Development") || safeGoal.includes("E-commerce") || safeGoal.includes("E-Commerce")) {
       specificTitle = "E-Commerce Web Architecture";
-      specificDescription = userBudget <= 30000 
-        ? `Given the tight budget of ₹${userBudget}, we will build a basic Shopify/WordPress based E-commerce site with standard templates.`
-        : `With a healthy budget of ₹${userBudget}, we will build a custom Next.js E-commerce platform with a dedicated Stripe integration, Vercel hosting, and advanced edge caching.`;
-    } else if (goal.includes("Cloud Migration")) {
+      specificDescription = safeBudget <= 30000 
+        ? `Given the tight budget of ₹${safeBudget}, we will build a basic Shopify/WordPress based E-commerce site with standard templates.`
+        : `With a healthy budget of ₹${safeBudget}, we will build a custom Next.js E-commerce platform with a dedicated Stripe integration, Vercel hosting, and advanced edge caching.`;
+    } else if (safeGoal.includes("Cloud Migration")) {
       specificTitle = "AWS Cloud Migration Strategy";
-      specificDescription = userBudget <= 100000
+      specificDescription = safeBudget <= 100000
         ? `Due to budget constraints, we will perform a 'Lift and Shift' migration to basic AWS EC2 instances with minimal refactoring.`
         : `We will execute a fully Cloud-Native migration to AWS Elastic Kubernetes Service (EKS) with Serverless Aurora DBs and automated CI/CD pipelines.`;
-    } else if (goal.includes("Mobile App")) {
+    } else if (safeGoal.includes("Mobile App")) {
       specificTitle = "Mobile App Architecture";
-      specificDescription = userBudget <= 100000
+      specificDescription = safeBudget <= 100000
         ? `We will build a hybrid MVP App using Flutter/React Native with Firebase as the backend to minimize costs.`
         : `We will build high-performance Native iOS (Swift) and Android (Kotlin) apps backed by a scalable Node.js microservices architecture.`;
-    } else if (goal.includes("Bug Fixing")) {
+    } else if (safeGoal.includes("Bug Fixing")) {
       specificTitle = "System Stability & Bug Fixes";
-      specificDescription = userBudget <= 10000
+      specificDescription = safeBudget <= 10000
         ? `We will apply immediate hotfixes and patches to the critical bugs to restore basic stability.`
         : `We will implement a comprehensive QA automation suite, set up Sentry for advanced error tracking, and permanently resolve the root causes of system failures.`;
+    } else if (safeGoal.includes("AI Expense") || safeGoal.includes("Expense Tracker")) {
+      specificTitle = "AI-Powered Expense & Analytics Engine";
+      specificDescription = `Automated ML expense classification engine with anomaly detection, fraud alerts, and automated multi-tier financial report generator.`;
     } else {
-      specificDescription = `Technical specs to achieve: ${goal}. ${isBasic ? 'Proposing a Basic MVP setup to fit the budget.' : 'Proposing a highly scalable premium setup.'}`;
+      specificDescription = `Technical specs to achieve: ${safeGoal || "Enterprise Architecture"}. ${isBasic ? 'Proposing a Basic MVP setup to fit the budget.' : 'Proposing a highly scalable premium setup.'}`;
     }
 
     return {

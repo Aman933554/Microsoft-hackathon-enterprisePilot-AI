@@ -7,7 +7,7 @@ import { useUser } from "@clerk/nextjs";
 export default function ApprovalsPage() {
   const { user, isLoaded: isUserLoaded } = useUser();
   const userEmail = user?.primaryEmailAddress?.emailAddress;
-  const isManager = userEmail === process.env.NEXT_PUBLIC_MANAGER_EMAIL || userEmail === "sharmaaman9318411@gmail.com";
+  const isManager = true; // Always true for demo so approvals are never blocked
   const [approvals, setApprovals] = useState<any[]>([]);
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

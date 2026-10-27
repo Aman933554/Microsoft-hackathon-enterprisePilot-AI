@@ -32,10 +32,18 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [debugMsg, setDebugMsg] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendMsg, setResendMsg] = useState("");
 
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [forgotPasswordStep, setForgotPasswordStep] = useState(0); // 0: enter email, 1: enter code and new password
   const [newPassword, setNewPassword] = useState("");
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
 
   useEffect(() => {
     if (isLoaded && isSignedIn) {
@@ -220,6 +228,30 @@ export default function LoginPage() {
     } catch (err: any) {
       console.error("Verify Error:", err);
       setError(err.errors?.[0]?.longMessage || err.message || "Error verifying code");
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    setError("");
+    setResendMsg("");
+    setIsLoading(true);
+    try {
+      const currentSignUp = signUp || clerk?.client?.signUp;
+      if (!currentSignUp) throw new Error("Sign up session not found. Please try again.");
+
+      if (typeof currentSignUp.prepareEmailAddressVerification === 'function') {
+        await currentSignUp.prepareEmailAddressVerification({ strategy: "email_code" });
+      } else if (typeof currentSignUp.prepareVerification === 'function') {
+        await currentSignUp.prepareVerification({ strategy: "email_code" });
+      } else if (typeof (currentSignUp as any).sendEmailCode === 'function') {
+        await (currentSignUp as any).sendEmailCode();
+      }
+      setResendMsg("Verification code re-sent! Please check your Inbox and Spam folder.");
+      setResendCooldown(30);
+    } catch (err: any) {
+      setError(err.errors?.[0]?.longMessage || err.message || "Failed to resend code.");
+    } finally {
       setIsLoading(false);
     }
   };
@@ -454,6 +486,26 @@ export default function LoginPage() {
           {pendingVerification ? (
             <form onSubmit={handleVerify} className="space-y-5">
               {error && <div className="text-red-500 text-sm bg-red-500/10 p-3 rounded-lg border border-red-500/20">{error}</div>}
+              {resendMsg && <div className="text-emerald-400 text-sm bg-emerald-500/10 p-3 rounded-lg border border-emerald-500/20">{resendMsg}</div>}
+
+              <div className="bg-white/5 border border-white/10 rounded-xl p-3 text-xs text-slate-300 flex items-center justify-between">
+                <div className="truncate mr-2">
+                  <span className="text-slate-400">Code sent to: </span>
+                  <span className="font-semibold text-white">{email}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPendingVerification(false);
+                    setError("");
+                    setResendMsg("");
+                  }}
+                  className="text-primary hover:text-primary/80 font-medium shrink-0 hover:underline"
+                >
+                  Change
+                </button>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">Verification Code</label>
                 <div className="relative group">
@@ -463,6 +515,7 @@ export default function LoginPage() {
                     onChange={e => setCode(e.target.value)}
                     className="w-full px-4 py-3.5 bg-black/40 border border-white/5 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all shadow-inner" 
                     placeholder="Enter the 6-digit code sent to your email" 
+                    required
                   />
                 </div>
               </div>
@@ -473,6 +526,17 @@ export default function LoginPage() {
               >
                 {isLoading ? "Please wait..." : "Verify Email \u2192"}
               </button>
+
+              <div className="text-center pt-2">
+                <button
+                  type="button"
+                  disabled={isLoading || resendCooldown > 0}
+                  onClick={handleResendCode}
+                  className="text-xs text-slate-400 hover:text-white transition-colors disabled:opacity-50"
+                >
+                  {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : "Didn't receive the code? Resend Code"}
+                </button>
+              </div>
             </form>
           ) : isForgotPassword ? (
             <form onSubmit={handleForgotPassword} className="space-y-5">

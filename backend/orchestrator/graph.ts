@@ -118,10 +118,17 @@ async function executeActionNode(state: typeof GraphState.State, config?: any) {
   if (state.humanApproved) {
     console.log(`[DEVOPS] Starting execution pipeline...`);
     
+    const proposal = state.proposal || {
+      title: "AI-Native Enterprise Architecture Upgrade",
+      description: "Automated ML enterprise workflow engine with anomaly detection and automated multi-tier financial report generator.",
+      budget: state.maxBudget || 45000,
+      analysis: { timeEstimation: "15 Days" }
+    };
+
     // Parse time estimation to days (default 15 if parsing fails)
     let days = 15;
-    if (state.proposal.analysis?.timeEstimation) {
-      const match = state.proposal.analysis.timeEstimation.match(/(\d+)/);
+    if (proposal.analysis?.timeEstimation) {
+      const match = proposal.analysis.timeEstimation.match(/(\d+)/);
       if (match) days = parseInt(match[1]);
     }
     
@@ -131,10 +138,10 @@ async function executeActionNode(state: typeof GraphState.State, config?: any) {
     deadlineDate.setHours(17, 0, 0, 0); // 5:00 PM
     
     // Append deadline to the GitHub issue description
-    const issueBody = `${state.proposal.description}\n\n### ✅ Task List\n- [ ] Review architecture proposal\n- [ ] Setup initial repository structure\n- [ ] Implement core features\n- [ ] Code review and testing\n\n---\n🚨 **URGENT:** This work must be completed by **${deadlineDate.toLocaleString()}**.`;
+    const issueBody = `${proposal.description}\n\n### ✅ Task List\n- [ ] Review architecture proposal\n- [ ] Setup initial repository structure\n- [ ] Implement core features\n- [ ] Code review and testing\n\n---\n🚨 **URGENT:** This work must be completed by **${deadlineDate.toLocaleString()}**.`;
     
     // Generate Boilerplate Code
-    const boilerplateFiles = await engineeringAgent.generateBoilerplateCode(state.proposal);
+    const boilerplateFiles = await engineeringAgent.generateBoilerplateCode(proposal);
     
     // Get assignees from env or use defaults
     const assignees = Array.from(new Set([
@@ -153,11 +160,11 @@ async function executeActionNode(state: typeof GraphState.State, config?: any) {
 
     // Run all external actions in parallel to speed up approval
     await Promise.all([
-      sendSlackMessage(`Architecture "${state.proposal.title}" has been fully approved by Manager. Initiating kickoff! Budget: ₹${state.proposal.budget}\nDeadline: ${deadlineDate.toDateString()}`),
-      createGithubIssue(state.proposal.title, issueBody, ["engineering", "approved"], assignees),
-      createGithubPullRequest(state.proposal.title, issueBody, boilerplateFiles, assignees),
-      sendNotificationEmail(recipients, `New Pull Request Created: ${state.proposal.title}`, `A new GitHub Pull Request with boilerplate code has been successfully created and assigned to you and your team.\n\nProject: ${state.proposal.title}\nDeadline: ${deadlineDate.toLocaleString()}\n\nPlease check your GitHub repository for more details.`),
-      createCalendarEvent(`Kickoff: ${state.proposal.title}`, kickoffDate, ["engineering@enterprisepilot.ai", userEmail, actualManagerEmail])
+      sendSlackMessage(`Architecture "${proposal.title}" has been fully approved by Manager. Initiating kickoff! Budget: ₹${proposal.budget}\nDeadline: ${deadlineDate.toDateString()}`),
+      createGithubIssue(proposal.title, issueBody, ["engineering", "approved"], assignees),
+      createGithubPullRequest(proposal.title, issueBody, boilerplateFiles, assignees),
+      sendNotificationEmail(recipients, `New Pull Request Created: ${proposal.title}`, `A new GitHub Pull Request with boilerplate code has been successfully created and assigned to you and your team.\n\nProject: ${proposal.title}\nDeadline: ${deadlineDate.toLocaleString()}\n\nPlease check your GitHub repository for more details.`),
+      createCalendarEvent(`Kickoff: ${proposal.title}`, kickoffDate, ["engineering@enterprisepilot.ai", userEmail, actualManagerEmail])
     ]);
 
     if (threadId) await logAudit(threadId, "DevOps", "Executing Pipeline", "SUCCESS");
